@@ -308,7 +308,7 @@
 }
 
 /* LED 도트 매트릭스 */
-.theme-stadium .frame > .digits {
+.theme-stadium .live-digits {
   padding: 0.04em 0.1em;
   mask-image: radial-gradient(circle, #000 58%, transparent 64%);
   mask-size: 6px 6px;

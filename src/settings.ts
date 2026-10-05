@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getTheme } from './themes';
-import type { DesignSetting, Settings } from './types';
+import { BLIND_STYLES } from './blind';
+import { getTheme, THEMES } from './themes';
+import type { DesignSetting, ResultTextStyle, Settings } from './types';
 
 const STORAGE_KEY = 'timer-game:settings:v1';
 
@@ -8,14 +9,40 @@ const neon = getTheme('neon');
 
 export const DEFAULT_SETTINGS: Settings = {
   targetMs: 15000,
+  toleranceMode: 'pct',
   tolerancePct: 0,
+  toleranceFixedMs: 0,
   blind: false,
   blindAfterMs: 3000,
+  dramatic: false,
+  dramaticMs: 3000,
+  revealPrompt: '결과를 공개하시겠습니까?',
+  revealPromptStyle: { size: 100, color: '', x: 0, y: 0 },
+  blindFx: {
+    style: 'dash',
+    maskChar: '-',
+    text: 'GUESS!',
+    speed: 100,
+    orbit: false,
+    spinnerSize: 100,
+    spinnerW: 100,
+    spinnerH: 100,
+    spinnerRadius: 50,
+    spinnerThick: 100,
+    imageSize: 60,
+    imageX: 0,
+    imageY: 0,
+    imageRound: true,
+  },
   showTarget: true,
   mainTitle: 'TIME CHALLENGE',
   subTitle: 'STOP AT THE EXACT MOMENT',
   successText: 'MISSION SUCCESS',
   failText: 'MISSION FAILED',
+  resultStyle: {
+    success: { custom: false, fill: { mode: 'solid', color: '#00e5ff', stops: ['#00e5ff', '#a855f7'], angle: 90 }, size: 100, x: 0, y: 0 },
+    fail: { custom: false, fill: { mode: 'solid', color: '#ff4d6d', stops: ['#ff4d6d', '#ff9f1c'], angle: 90 }, size: 100, x: 0, y: 0 },
+  },
   theme: neon.id,
   accent: neon.accent,
   text: neon.text,
@@ -38,22 +65,43 @@ function mergeDesign(base: DesignSetting, saved?: Partial<DesignSetting>): Desig
   };
 }
 
+function mergeResultStyle(base: ResultTextStyle, saved?: Partial<ResultTextStyle>): ResultTextStyle {
+  return { ...base, ...saved, fill: { ...base.fill, ...saved?.fill } };
+}
+
+/** 부분 저장값을 기본값과 병합해 완전한 Settings 로 만듦 (localStorage · 가져오기 공용) */
+export function normalizeSettings(saved: Partial<Settings>): Settings {
+  const theme = THEMES.some((t) => t.id === saved.theme) ? saved.theme! : DEFAULT_SETTINGS.theme;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...saved,
+    theme,
+    bg: {
+      ...DEFAULT_SETTINGS.bg,
+      ...saved.bg,
+      gradient: { ...DEFAULT_SETTINGS.bg.gradient, ...saved.bg?.gradient },
+    },
+    design: mergeDesign(getTheme(theme).design, saved.design),
+    revealPromptStyle: { ...DEFAULT_SETTINGS.revealPromptStyle, ...saved.revealPromptStyle },
+    resultStyle: {
+      success: mergeResultStyle(DEFAULT_SETTINGS.resultStyle.success, saved.resultStyle?.success),
+      fail: mergeResultStyle(DEFAULT_SETTINGS.resultStyle.fail, saved.resultStyle?.fail),
+    },
+    blindFx: {
+      ...DEFAULT_SETTINGS.blindFx,
+      ...saved.blindFx,
+      style: BLIND_STYLES.some((b) => b.id === saved.blindFx?.style) ? saved.blindFx!.style : DEFAULT_SETTINGS.blindFx.style,
+    },
+    actionKeys: saved.actionKeys?.length ? saved.actionKeys : DEFAULT_SETTINGS.actionKeys,
+    resetKeys: saved.resetKeys ?? DEFAULT_SETTINGS.resetKeys,
+  };
+}
+
 function load(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const saved = JSON.parse(raw) as Partial<Settings>;
-    return {
-      ...DEFAULT_SETTINGS,
-      ...saved,
-      bg: {
-        ...DEFAULT_SETTINGS.bg,
-        ...saved.bg,
-        gradient: { ...DEFAULT_SETTINGS.bg.gradient, ...saved.bg?.gradient },
-      },
-      design: mergeDesign(getTheme(saved.theme ?? DEFAULT_SETTINGS.theme).design, saved.design),
-      actionKeys: saved.actionKeys?.length ? saved.actionKeys : DEFAULT_SETTINGS.actionKeys,
-    };
+    return normalizeSettings(JSON.parse(raw) as Partial<Settings>);
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -73,5 +121,6 @@ export function useSettings() {
   return [settings, setSettings] as const;
 }
 
-/** 허용 오차(ms). 0% 이면 0 → 1/100초 단위로 정확히 일치해야 성공 */
-export const toleranceMs = (s: Settings) => Math.round((s.targetMs * s.tolerancePct) / 100);
+/** 허용 오차(ms). 0 이면 1/100초 단위로 정확히 일치해야 성공 */
+export const toleranceMs = (s: Settings) =>
+  s.toleranceMode === 'ms' ? s.toleranceFixedMs : Math.round((s.targetMs * s.tolerancePct) / 100);

@@ -1,0 +1,233 @@
+/* ───────── 극적인 결과 공개 ─────────
+   confirm: 공개 여부 묻기 → reveal: --reveal-ms 동안 점점 세지는 떨림 → result(.is-dramatic): 섬광과 함께 쾅 */
+
+/* 공개 확인 */
+.reveal-prompt {
+  font-family: var(--font-title);
+  position: relative;
+  z-index: 2;
+  font-size: calc(clamp(18px, 2.4vw, 40px) * var(--title-adj) * var(--prompt-scale, 1));
+  font-weight: var(--title-weight);
+  letter-spacing: 0.06em;
+  text-align: center;
+  white-space: pre-line;
+  color: var(--prompt-color, var(--accent));
+  animation:
+    result-in 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both,
+    rv-breathe 1.6s ease-in-out 0.5s infinite;
+}
+
+/* 긴장: 점 세 개가 시간에 맞춰 하나씩 켜짐 */
+.reveal-suspense {
+  display: flex;
+  gap: clamp(14px, 2vw, 28px);
+  padding-top: 0.4em;
+}
+
+.reveal-suspense span {
+  width: clamp(12px, 1.4vw, 22px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent);
+  opacity: 0.15;
+  scale: 0.6;
+  animation: rv-dot 0.35s cubic-bezier(0.2, 1.8, 0.4, 1) calc(var(--i) * var(--reveal-ms) / 3) forwards;
+}
+
+/* 떨림: 판 전체 잔떨림 → 중반부터 기울며 흔들림 → 후반엔 숫자까지 격하게 */
+.phase-reveal .frame-wrap {
+  animation: rv-jitter 70ms linear infinite;
+}
+
+.phase-reveal .frame {
+  animation:
+    rv-build var(--reveal-ms) cubic-bezier(0.55, 0, 1, 1) forwards,
+    rv-tilt 60ms linear calc(var(--reveal-ms) * 0.45) infinite;
+}
+
+.phase-reveal .live {
+  animation: rv-jitter-hard 45ms linear calc(var(--reveal-ms) * 0.72) infinite;
+}
+
+.phase-reveal .titles {
+  opacity: 0.2;
+  transition: opacity 0.6s;
+}
+
+/* 주변이 서서히 어두워짐 */
+.reveal-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 15%, rgba(0, 0, 0, 0.88) 75%);
+  pointer-events: none;
+  animation: rv-veil var(--reveal-ms) ease-in forwards;
+}
+
+/* 공개 순간 */
+.reveal-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: radial-gradient(circle at 50% 50%, #fff 0%, var(--success) 30%, transparent 72%);
+  pointer-events: none;
+  animation: rv-flash 0.9s ease-out forwards;
+}
+
+.app.is-fail .reveal-flash {
+  background: radial-gradient(circle at 50% 50%, #fff 0%, var(--fail) 30%, transparent 72%);
+}
+
+.app.is-dramatic .frame.is-success,
+.app.is-dramatic .frame.is-fail {
+  animation: rv-slam 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.app.is-dramatic .frame.is-fail .live {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.25s;
+}
+
+.app.is-dramatic.phase-result .stage {
+  animation: rv-impact 0.45s ease-out;
+}
+
+.app.is-dramatic .result {
+  animation: rv-result 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) 0.1s both;
+}
+
+/* ───────── keyframes ───────── */
+@keyframes rv-breathe {
+  50% {
+    opacity: 0.55;
+    scale: 0.97;
+  }
+}
+
+@keyframes rv-dot {
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes rv-jitter {
+  0% {
+    translate: 1.5px -1px;
+  }
+  25% {
+    translate: -2px 1.5px;
+  }
+  50% {
+    translate: 1px 2px;
+  }
+  75% {
+    translate: -1.5px -2px;
+  }
+  100% {
+    translate: 1.5px -1px;
+  }
+}
+
+@keyframes rv-jitter-hard {
+  0% {
+    translate: 0.04em -0.03em;
+  }
+  33% {
+    translate: -0.05em 0.04em;
+  }
+  66% {
+    translate: 0.03em 0.05em;
+  }
+  100% {
+    translate: 0.04em -0.03em;
+  }
+}
+
+@keyframes rv-tilt {
+  0%,
+  100% {
+    rotate: -0.8deg;
+  }
+  50% {
+    rotate: 0.8deg;
+  }
+}
+
+@keyframes rv-build {
+  from {
+    scale: 1;
+    filter: brightness(1);
+  }
+  to {
+    scale: 1.07;
+    filter: brightness(1.45) drop-shadow(0 0 28px var(--accent));
+  }
+}
+
+@keyframes rv-veil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rv-flash {
+  0% {
+    opacity: 0.95;
+    scale: 0.6;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.2;
+  }
+}
+
+@keyframes rv-slam {
+  0% {
+    scale: 1.45;
+    filter: blur(10px) brightness(2.2);
+  }
+  60% {
+    filter: blur(0) brightness(1.2);
+  }
+  100% {
+    scale: 1;
+    filter: none;
+  }
+}
+
+@keyframes rv-impact {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  15% {
+    translate: 0 10px;
+  }
+  35% {
+    translate: -6px -6px;
+  }
+  55% {
+    translate: 5px 4px;
+  }
+  75% {
+    translate: -2px -2px;
+  }
+}
+
+@keyframes rv-result {
+  0% {
+    opacity: 0;
+    scale: 2.6;
+    filter: blur(12px);
+    letter-spacing: 0.5em;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    filter: none;
+  }
+}

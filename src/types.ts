@@ -71,16 +71,96 @@ export interface BackgroundSetting {
   imageBlur: number;
 }
 
+export type BlindStyle =
+  // 가린 숫자
+  | 'dash'
+  | 'bounce'
+  | 'shake'
+  | 'flip'
+  | 'scramble'
+  | 'glitch'
+  // 텍스트
+  | 'text'
+  | 'text-bounce'
+  | 'text-shake'
+  | 'text-wave'
+  | 'text-type'
+  | 'text-beat'
+  // 그래픽
+  | 'spinner'
+  | 'equalizer'
+  | 'radar'
+  | 'hidden';
+
+/** 블라인드(가림) 연출 */
+export interface BlindSetting {
+  style: BlindStyle;
+  /** 숫자 가림 문자 */
+  maskChar: string;
+  /** 텍스트 연출에 쓸 문구 */
+  text: string;
+  /** 애니메이션 속도 % (100 = 기본) */
+  speed: number;
+  /** 타이머 박스 테두리를 도는 글로우 (모든 연출과 함께 사용) */
+  orbit: boolean;
+  /** 스피너 크기 % */
+  spinnerSize: number;
+  /** 스피너 모양: 너비·높이(기본 크기 대비 %), 모서리(짧은 변 대비 %, 50 = 원/알약), 선 두께 % */
+  spinnerW: number;
+  spinnerH: number;
+  spinnerRadius: number;
+  spinnerThick: number;
+  /** 스피너 가운데 이미지: 크기(스피너 대비 %), 위치(스피너 대비 % 이동), 원형 자르기 */
+  imageSize: number;
+  imageX: number;
+  imageY: number;
+  imageRound: boolean;
+}
+
+/** 결과 문구(성공/실패 각각) 모양 */
+export interface ResultTextStyle {
+  /** false 면 테마 색 (성공 = 포인트 색, 실패 = 빨강) */
+  custom: boolean;
+  fill: Fill;
+  /** 크기 % (100 = 기본) */
+  size: number;
+  /** 기본 자리에서 이동 — 화면 폭/높이 대비 % */
+  x: number;
+  y: number;
+}
+
+/** 공개 확인 문구 모양 */
+export interface RevealPromptStyle {
+  /** 크기 % (100 = 기본) */
+  size: number;
+  /** 비우면 테마 포인트 색 */
+  color: string;
+  /** 기본 자리(결과 문구 자리)에서 이동 — 화면 폭/높이 대비 % */
+  x: number;
+  y: number;
+}
+
 export interface Settings {
   targetMs: number;
+  /** pct: 목표 시간의 % · ms: 고정 ±ms */
+  toleranceMode: 'pct' | 'ms';
   tolerancePct: number;
+  toleranceFixedMs: number;
   blind: boolean;
   blindAfterMs: number;
+  blindFx: BlindSetting;
+  /** 극적인 결과 공개: 블라인드 상태에서 멈추면 공개 확인 → 긴장 연출 → 결과 */
+  dramatic: boolean;
+  /** 긴장 연출 시간 (ms) */
+  dramaticMs: number;
+  revealPrompt: string;
+  revealPromptStyle: RevealPromptStyle;
   showTarget: boolean;
   mainTitle: string;
   subTitle: string;
   successText: string;
   failText: string;
+  resultStyle: { success: ResultTextStyle; fail: ResultTextStyle };
   theme: ThemeId;
   accent: string;
   text: string;
@@ -92,7 +172,11 @@ export interface Settings {
   resetKeys: string[];
 }
 
-export type Phase = 'idle' | 'running' | 'result';
+/** confirm: 결과 공개 여부 확인 · reveal: 공개 직전 긴장 연출 (극적인 결과 공개 전용) */
+/** 설정 중 무대에 임시로 띄워 보는 상태 (layout: 상태 그대로, 패널에 가리지 않게만) */
+export type StagePreview = 'layout' | 'blind' | 'confirm' | 'result' | 'result-fail';
+
+export type Phase = 'idle' | 'running' | 'confirm' | 'reveal' | 'result';
 
 export interface GameResult {
   elapsedMs: number;

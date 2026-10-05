@@ -1,19 +1,61 @@
 import { useMemo, type CSSProperties } from 'react';
+import { fillGradient } from '../design';
 import { formatDiff } from '../time';
-import type { GameResult } from '../types';
+import type { GameResult, Phase, ResultTextStyle, RevealPromptStyle } from '../types';
 
 interface Props {
+  phase: Phase;
   result: GameResult | null;
   successText: string;
   failText: string;
+  revealPrompt: string;
+  promptStyle: RevealPromptStyle;
+  resultStyle: { success: ResultTextStyle; fail: ResultTextStyle };
 }
 
-export function Result({ result, successText, failText }: Props) {
+/** 결과 블록 크기·위치, 사용자 색이면 라벨 색과 글로우 색까지 덮어씀 */
+function resultVars(rs: ResultTextStyle, success: boolean): CSSProperties {
+  const base = { '--result-scale': rs.size / 100, translate: `${rs.x}vw ${rs.y}vh` } as Record<string, string | number>;
+  if (!rs.custom) return base as CSSProperties;
+  const glow = rs.fill.mode === 'solid' ? rs.fill.color : rs.fill.stops[0];
+  return {
+    ...base,
+    [success ? '--success' : '--fail']: glow,
+    '--result-color': rs.fill.color,
+    '--result-grad': fillGradient(rs.fill),
+  } as CSSProperties;
+}
+
+export function Result({ phase, result, successText, failText, revealPrompt, promptStyle: ps, resultStyle }: Props) {
+  const rs = result && resultStyle[result.success ? 'success' : 'fail'];
   return (
     <div className="result-slot">
+      {phase === 'confirm' && (
+        <div
+          className="reveal-prompt"
+          style={
+            {
+              '--prompt-scale': ps.size / 100,
+              translate: `${ps.x}vw ${ps.y}vh`,
+              ...(ps.color && { '--prompt-color': ps.color }),
+            } as CSSProperties
+          }
+        >
+          {revealPrompt}
+        </div>
+      )}
+      {phase === 'reveal' && (
+        <div className="reveal-suspense" aria-label="결과 공개 중">
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{ '--i': i } as CSSProperties} />
+          ))}
+        </div>
+      )}
       {result && (
-        <div className={`result ${result.success ? 'is-success' : 'is-fail'}`}>
-          <span className="result-label">{result.success ? successText : failText}</span>
+        <div className={`result ${result.success ? 'is-success' : 'is-fail'}`} style={resultVars(rs!, result.success)}>
+          <span className={`result-label ${rs!.custom ? `is-custom ${rs!.fill.mode === 'gradient' ? 'is-grad' : ''}` : ''}`}>
+            {result.success ? successText : failText}
+          </span>
           <span className="result-diff">{result.diffMs === 0 ? 'PERFECT' : `${formatDiff(result.diffMs)}s`}</span>
         </div>
       )}

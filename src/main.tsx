@@ -16,6 +16,8 @@ import '@fontsource/do-hyeon';
 import './styles/base.css';
 import './styles/stage.css';
 import './styles/themes.css';
+import './styles/blind.css';
+import './styles/dramatic.css';
 import './styles/panel.css';
 
 import App from './App';
