@@ -1,0 +1,502 @@
+/* ───────── 변수: 폰트·크기·채우기·글로우는 디자인 설정에서 인라인으로 주입 ───────── */
+.app,
+.theme-card {
+  --success: var(--accent);
+  --fail: #ff4d6d;
+  --glow-color: var(--accent);
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ───────── background ───────── */
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  transition: background 0.5s ease;
+}
+
+.bg-image {
+  position: absolute;
+  background-size: cover;
+  background-position: center;
+}
+
+.bg-dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+.bg-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ───────── stage ───────── */
+.stage {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vh, 48px);
+  padding: 6vh 4vw 12vh;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9em;
+  text-align: center;
+  max-width: 92vw;
+}
+
+.main-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: calc(clamp(32px, 6.2vw, 108px) * var(--title-scale));
+  font-weight: var(--title-weight);
+  font-style: var(--title-style);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  color: var(--title-color);
+  padding: 0 0.08em; /* 이탤릭·그라데이션 잘림 방지 */
+}
+
+.app.title-grad .main-title {
+  background: var(--title-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app.glow-title .main-title {
+  filter: drop-shadow(0 0 calc(var(--g-title) * 0.05em) var(--accent))
+    drop-shadow(0 0 calc(var(--g-title) * 0.4em) color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.sub-title {
+  margin: 0;
+  font-size: calc(clamp(12px, 1.3vw, 22px) * var(--sub-scale));
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em; /* letter-spacing 오른쪽 여백 보정 */
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+/* ───────── timer frame ───────── */
+.frame-wrap {
+  position: relative;
+}
+
+.frame {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 1vh, 12px);
+  padding: clamp(16px, 2.8vh, 34px) clamp(28px, 4vw, 68px) clamp(18px, 3vh, 36px);
+  border-radius: var(--radius);
+}
+
+/* 판 배경 (테마별 지정, 불투명도는 설정값) */
+.frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: var(--frame-bg);
+  pointer-events: none;
+}
+
+/* 테두리 줄 (1~N줄, 단색/그라데이션) */
+.frame-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.frame-lines span {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.frame-lines span.is-gradient {
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+.app.glow-border .frame-lines {
+  filter: drop-shadow(0 0 calc(var(--g-border) * 3px) var(--border-glow))
+    drop-shadow(0 0 calc(var(--g-border) * 22px) color-mix(in srgb, var(--border-glow) 70%, transparent));
+}
+
+.target {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  font-size: clamp(11px, 1.15vw, 18px);
+  opacity: 0.55;
+}
+
+.target-label {
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+}
+
+.digits {
+  display: flex;
+  font-family: var(--font-digit);
+  font-size: var(--digit-size);
+  font-weight: var(--digit-weight);
+  font-style: var(--digit-style);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s;
+}
+
+.target-digits {
+  font-size: 1em;
+  font-style: normal;
+}
+
+.frame > .digits {
+  color: var(--digit-color);
+  padding: 0.04em 0.06em;
+}
+
+.app.digit-grad .frame > .digits {
+  background: var(--digit-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app.glow-digits .frame > .digits {
+  filter: drop-shadow(0 0 calc(var(--g-digits) * 0.04em) var(--glow-color))
+    drop-shadow(0 0 calc(var(--g-digits) * 0.3em) color-mix(in srgb, var(--glow-color) 70%, transparent));
+}
+
+.digit {
+  display: inline-block;
+  width: var(--digit-w);
+  text-align: center;
+}
+
+.colon {
+  display: inline-block;
+  width: var(--colon-w);
+  text-align: center;
+  opacity: 0.5;
+  transform: translateY(-0.05em);
+}
+
+.phase-running .frame > .digits .colon {
+  animation: colon-pulse 1s ease-in-out infinite;
+}
+
+.digits.is-masked .digit {
+  opacity: 0.4;
+}
+
+/* 결과 상태 — 채우기 설정보다 우선 */
+.app .frame.is-success {
+  --glow-color: var(--success);
+}
+
+.app .frame.is-fail {
+  --glow-color: var(--fail);
+}
+
+.app .frame.is-success > .digits {
+  background: none;
+  color: var(--success);
+}
+
+.frame.is-success {
+  animation: frame-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.frame.is-success::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--success);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: ring 1.1s ease-out forwards;
+}
+
+.app .frame.is-fail > .digits {
+  background: none;
+  color: var(--fail);
+}
+
+.frame.is-fail {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* ───────── result ───────── */
+.result-slot {
+  min-height: clamp(76px, 12vh, 140px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7em;
+  animation: result-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.result-label {
+  position: relative;
+  font-family: var(--font-title);
+  font-size: calc(clamp(26px, 4.4vw, 72px) * var(--title-adj));
+  font-weight: var(--title-weight);
+  font-style: var(--title-style);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.result-diff {
+  font-family: var(--font-digit);
+  font-size: clamp(12px, 1.25vw, 20px);
+  letter-spacing: 0.24em;
+  opacity: 0.65;
+}
+
+.result.is-success .result-label {
+  color: var(--success);
+  animation: glow 1.8s ease-in-out 0.4s infinite;
+}
+
+.result.is-fail .result-label {
+  color: var(--fail);
+  opacity: 0.9;
+}
+
+/* ───────── success particles ───────── */
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.burst span {
+  position: absolute;
+  width: calc(10px * var(--s));
+  height: calc(10px * var(--s));
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 12px var(--success);
+  animation: particle 1.2s cubic-bezier(0.1, 0.7, 0.2, 1) var(--d) both;
+}
+
+.burst span:nth-child(3n) {
+  background: var(--text);
+  box-shadow: 0 0 10px var(--text);
+}
+
+.burst span:nth-child(4n) {
+  border-radius: 2px;
+}
+
+/* ───────── key hint ───────── */
+.key-hint {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(20px, 4.5vh, 44px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  opacity: 0.45;
+}
+
+.key-hint kbd {
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  padding: 6px 16px;
+  border: 1px solid currentColor;
+  border-bottom-width: 3px;
+  border-radius: 8px;
+}
+
+.phase-running .key-hint {
+  opacity: 0.25;
+}
+
+/* ───────── dock ───────── */
+.dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.dock:hover {
+  opacity: 1;
+}
+
+.phase-running .dock {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dock-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.dock-btn:hover {
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  transform: translateY(-2px);
+}
+
+/* ───────── keyframes ───────── */
+@keyframes colon-pulse {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes frame-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ring {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.18, 1.4);
+  }
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-8px);
+  }
+  40%,
+  60% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+    letter-spacing: 0.3em;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 calc(var(--g-result) * 0.3em) color-mix(in srgb, var(--success) 50%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 calc(var(--g-result) * 0.9em) color-mix(in srgb, var(--success) 85%, transparent));
+  }
+}
+
+@keyframes particle {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(4%, -3%) scale(1.08);
+  }
+}
