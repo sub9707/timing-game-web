@@ -426,8 +426,12 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                   onChange={(v) => set({ cheatSettleMs: Math.round(v * 1000) })}
                   output={<NumberInput value={s.cheatSettleMs / 1000} min={0.2} max={15} decimals={1} suffix="초" onCommit={(v) => set({ cheatSettleMs: Math.round(v * 1000) })} />}
                 />
+                <Toggle label="치트 목표 시간 따로 지정" checked={s.cheatTargetOn} onChange={(v) => set({ cheatTargetOn: v })} />
+                {s.cheatTargetOn && <SecondsInput valueMs={s.cheatTargetMs} onCommit={(ms) => set({ cheatTargetMs: ms })} />}
                 <p className="hint-text">
-                  {s.cheatKeys.length ? '실패 화면에서 치트 키를 누르면 이 시간 동안 목표 시간으로 굴러간 뒤 성공 처리돼요' : '게임 탭 › 조작 키에서 치트 키를 지정해야 쓸 수 있어요'}
+                  {s.cheatKeys.length
+                    ? `실패 화면에서 치트 키를 누르면 멈춘 시간에서 ${((s.cheatTargetOn ? s.cheatTargetMs : s.targetMs) / 1000).toFixed(2)}s 로 굴러간 뒤 성공 처리돼요`
+                    : '게임 탭 › 조작 키에서 치트 키를 지정해야 쓸 수 있어요'}
                 </p>
               </Section>
 

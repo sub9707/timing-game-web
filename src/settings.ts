@@ -17,6 +17,8 @@ export const DEFAULT_SETTINGS: Settings = {
   snapAnimate: true,
   settleMs: 1500,
   cheatSettleMs: 1500,
+  cheatTargetOn: false,
+  cheatTargetMs: 15000,
   blind: false,
   blindAfterMs: 3000,
   dramatic: false,

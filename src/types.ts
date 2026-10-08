@@ -156,6 +156,9 @@ export interface Settings {
   settleMs: number;
   /** 치트 키로 성공 처리할 때 숫자가 굴러가는 시간 (ms) */
   cheatSettleMs: number;
+  /** 치트로 굴러갈 시간을 따로 지정 (끄면 목표 시간) */
+  cheatTargetOn: boolean;
+  cheatTargetMs: number;
   blind: boolean;
   blindAfterMs: number;
   blindFx: BlindSetting;

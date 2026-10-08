@@ -71,8 +71,9 @@ export default function App() {
       const r = st.result;
       if (st.phase !== 'result' || !r || r.success) return;
       st.lastAction = t;
-      const { targetMs } = st.settings;
-      const next = { elapsedMs: targetMs, diffMs: 0, success: true, fromMs: r.elapsedMs, settleMs: st.settings.cheatSettleMs };
+      const { targetMs, cheatTargetOn, cheatTargetMs, cheatSettleMs } = st.settings;
+      const to = cheatTargetOn ? cheatTargetMs : targetMs;
+      const next = { elapsedMs: to, diffMs: to - targetMs, success: true, fromMs: r.elapsedMs, settleMs: cheatSettleMs };
       st.result = next;
       setResult(next);
       showResult(next, true);
