@@ -40,6 +40,9 @@ interface LiveTimerProps {
   phase: Phase;
   startAt: number;
   stoppedMs: number;
+  /** settle 단계: 이 시간에서 stoppedMs 까지 settleMs 동안 숫자가 굴러감 */
+  fromMs?: number;
+  settleMs: number;
   blind: boolean;
   blindAfterMs: number;
   blindFx: BlindSetting;
@@ -48,7 +51,13 @@ interface LiveTimerProps {
   forceBlind?: boolean;
 }
 
-export function LiveTimer({ phase, startAt, stoppedMs, blind, blindAfterMs, blindFx, blindImageUrl, forceBlind }: LiveTimerProps) {
+/** 처음 잠깐 머뭇거리다 가속 → 목표에 천천히 안착 */
+function settleEase(p: number) {
+  const t = Math.max(0, (p - 0.12) / 0.88);
+  return 1 - Math.pow(1 - t, 4);
+}
+
+export function LiveTimer({ phase, startAt, stoppedMs, fromMs, settleMs, blind, blindAfterMs, blindFx, blindImageUrl, forceBlind }: LiveTimerProps) {
   const [elapsed, setElapsed] = useState(0);
 
   useLayoutEffect(() => {
@@ -62,12 +71,27 @@ export function LiveTimer({ phase, startAt, stoppedMs, blind, blindAfterMs, blin
     return () => cancelAnimationFrame(raf);
   }, [phase, startAt]);
 
-  const ms = phase === 'idle' ? 0 : phase === 'running' ? elapsed : stoppedMs;
+  const [settling, setSettling] = useState(0);
+  const settleFrom = fromMs ?? stoppedMs;
+  useLayoutEffect(() => {
+    if (phase !== 'settle') return;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = () => {
+      const p = Math.min(1, (performance.now() - t0) / Math.max(1, settleMs));
+      setSettling(settleFrom + (stoppedMs - settleFrom) * settleEase(p));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [phase, settleFrom, stoppedMs, settleMs]);
+
+  const ms = phase === 'idle' ? 0 : phase === 'running' ? elapsed : phase === 'settle' ? Math.round(settling / 10) * 10 : stoppedMs;
   const hidden = forceBlind || phase === 'confirm' || phase === 'reveal' || (phase === 'running' && blind && elapsed >= blindAfterMs);
   if (hidden) return <BlindView fx={blindFx} imageUrl={blindImageUrl} />;
 
   return (
-    <div className="live">
+    <div className={`live ${phase === 'settle' ? 'is-settling' : ''}`}>
       <Digits ms={ms} className="live-digits" />
     </div>
   );

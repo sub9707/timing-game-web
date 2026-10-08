@@ -150,6 +150,12 @@ export interface Settings {
   toleranceAboveMs: number;
   /** 성공하면 실제 멈춘 시간 대신 목표 시간을 보여줌 */
   snapToTarget: boolean;
+  /** 목표 시간으로 바로 바꾸지 않고, 실제 시간에서 목표 시간까지 숫자가 굴러가는 연출 */
+  snapAnimate: boolean;
+  /** 숫자가 목표 시간까지 굴러가는 시간 (ms) */
+  settleMs: number;
+  /** 치트 키로 성공 처리할 때 숫자가 굴러가는 시간 (ms) */
+  cheatSettleMs: number;
   blind: boolean;
   blindAfterMs: number;
   blindFx: BlindSetting;
@@ -174,16 +180,23 @@ export interface Settings {
   actionKeys: string[];
   /** 리셋 전용 (선택). 지정하면 진행 키로는 리셋되지 않음 */
   resetKeys: string[];
+  /** 치트 (선택). 실패 화면에서 누르면 숫자가 목표 시간으로 굴러간 뒤 성공 처리 — 화면엔 표시 안 함 */
+  cheatKeys: string[];
 }
 
-/** confirm: 결과 공개 여부 확인 · reveal: 공개 직전 긴장 연출 (극적인 결과 공개 전용) */
+/** confirm: 결과 공개 여부 확인 · reveal: 공개 직전 긴장 연출 (극적인 결과 공개 전용)
+ *  settle: 숫자가 실제 시간 → 목표 시간으로 굴러가는 중 (목표 시간 연출 · 치트) */
 /** 설정 중 무대에 임시로 띄워 보는 상태 (layout: 상태 그대로, 패널에 가리지 않게만) */
 export type StagePreview = 'layout' | 'blind' | 'confirm' | 'result' | 'result-fail';
 
-export type Phase = 'idle' | 'running' | 'confirm' | 'reveal' | 'result';
+export type Phase = 'idle' | 'running' | 'confirm' | 'reveal' | 'settle' | 'result';
 
 export interface GameResult {
   elapsedMs: number;
   diffMs: number;
   success: boolean;
+  /** 있으면 결과 공개 전에 이 시간에서 elapsedMs 로 숫자가 굴러감 */
+  fromMs?: number;
+  /** 굴러가는 시간 (ms) */
+  settleMs?: number;
 }

@@ -63,12 +63,14 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
   };
 
   /** 한 키는 한 역할만. 진행 키는 최소 1개 유지 */
-  const setKeys = (field: 'actionKeys' | 'resetKeys', keys: string[]) =>
+  const setKeys = (field: 'actionKeys' | 'resetKeys' | 'cheatKeys', keys: string[]) =>
     onChange((prev) => {
-      const other = field === 'actionKeys' ? 'resetKeys' : 'actionKeys';
-      const otherKeys = prev[other].filter((k) => !keys.includes(k));
-      if (other === 'actionKeys' && otherKeys.length === 0) return prev;
-      return { ...prev, [field]: keys, [other]: otherKeys };
+      const next = { ...prev, [field]: keys };
+      for (const other of ['actionKeys', 'resetKeys', 'cheatKeys'] as const) {
+        if (other !== field) next[other] = prev[other].filter((k) => !keys.includes(k));
+      }
+      if (next.actionKeys.length === 0) return prev;
+      return next;
     });
 
   /** 이 섹션 상태를 무대에 띄워 보기 (한 번에 하나) */
@@ -192,6 +194,25 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                 <p className="hint-text">
                   {s.snapToTarget ? '허용 오차 안이면 실제 시간 대신 목표 시간(PERFECT)을 보여줘요' : '허용 오차 안이어도 실제로 멈춘 시간을 그대로 보여줘요'}
                 </p>
+                {s.snapToTarget && (
+                  <>
+                    <Toggle label="목표 시간으로 굴러가는 연출" checked={s.snapAnimate} onChange={(v) => set({ snapAnimate: v })} />
+                    <p className="hint-text">
+                      {s.snapAnimate ? '멈춘 시간에서 목표 시간까지 숫자가 굴러간 뒤 극적으로 성공을 보여줘요' : '바로 목표 시간을 보여줘요'}
+                    </p>
+                  </>
+                )}
+                {s.snapToTarget && s.snapAnimate && (
+                  <Range
+                    label="굴러가는 시간"
+                    min={0.5}
+                    max={5}
+                    step={0.1}
+                    value={s.settleMs / 1000}
+                    onChange={(v) => set({ settleMs: Math.round(v * 1000) })}
+                    output={<NumberInput value={s.settleMs / 1000} min={0.2} max={15} decimals={1} suffix="초" onCommit={(v) => set({ settleMs: Math.round(v * 1000) })} />}
+                  />
+                )}
               </Section>
 
               <Section title="화면 문구">
@@ -216,6 +237,11 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                   <KeyList keys={s.resetKeys} min={0} onChange={(k) => setKeys('resetKeys', k)} />
                 </div>
                 <p className="hint-text">{s.resetKeys.length ? '리셋 키로만 결과를 넘길 수 있어요' : '비워두면 시작 키로 리셋'}</p>
+                <div className="key-row">
+                  <span className="field-label">치트</span>
+                  <KeyList keys={s.cheatKeys} min={0} onChange={(k) => setKeys('cheatKeys', k)} />
+                </div>
+                <p className="hint-text">실패 화면에서 누르면 숫자가 목표 시간으로 굴러간 뒤 성공 처리돼요. 화면엔 표시되지 않아요</p>
               </Group>
 
               <Group title="설정 백업" meta="다른 PC 로 옮기기">
@@ -388,6 +414,21 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                     <ColorField value={rp.color || s.accent} swatches={COLOR_SWATCHES} onChange={(color) => setPrompt({ color })} />
                   </Field>
                 </Fold>
+              </Section>
+
+              <Section title="치트 연출" aside={s.cheatKeys.length ? s.cheatKeys.map(keyLabel).join('·') : '키 없음'}>
+                <Range
+                  label="굴러가는 시간"
+                  min={0.5}
+                  max={5}
+                  step={0.1}
+                  value={s.cheatSettleMs / 1000}
+                  onChange={(v) => set({ cheatSettleMs: Math.round(v * 1000) })}
+                  output={<NumberInput value={s.cheatSettleMs / 1000} min={0.2} max={15} decimals={1} suffix="초" onCommit={(v) => set({ cheatSettleMs: Math.round(v * 1000) })} />}
+                />
+                <p className="hint-text">
+                  {s.cheatKeys.length ? '실패 화면에서 치트 키를 누르면 이 시간 동안 목표 시간으로 굴러간 뒤 성공 처리돼요' : '게임 탭 › 조작 키에서 치트 키를 지정해야 쓸 수 있어요'}
+                </p>
               </Section>
 
               <Section title="결과 문구" aside={see(resultTab === 'fail' ? 'result-fail' : 'result')}>

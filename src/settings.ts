@@ -14,6 +14,9 @@ export const DEFAULT_SETTINGS: Settings = {
   toleranceBelowMs: 0,
   toleranceAboveMs: 0,
   snapToTarget: false,
+  snapAnimate: true,
+  settleMs: 1500,
+  cheatSettleMs: 1500,
   blind: false,
   blindAfterMs: 3000,
   dramatic: false,
@@ -52,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   design: structuredClone(neon.design),
   actionKeys: ['Space'],
   resetKeys: [],
+  cheatKeys: [],
 };
 
 /** 저장된 값이 없는 항목은 테마 기본값으로 채움 (이전 버전 저장값 호환) */
@@ -79,6 +83,10 @@ export function normalizeSettings(saved: Partial<Settings>): Settings {
     saved = { toleranceBelowMs: legacyFixed, toleranceAboveMs: legacyFixed, ...saved };
     delete (saved as { toleranceFixedMs?: number }).toleranceFixedMs;
   }
+  // 치트 연출 시간이 따로 생기기 전엔 목표 시간 연출 시간을 같이 썼음
+  if (saved.cheatSettleMs === undefined && saved.settleMs !== undefined) {
+    saved = { ...saved, cheatSettleMs: saved.settleMs };
+  }
   const theme = THEMES.some((t) => t.id === saved.theme) ? saved.theme! : DEFAULT_SETTINGS.theme;
   return {
     ...DEFAULT_SETTINGS,
@@ -102,15 +110,23 @@ export function normalizeSettings(saved: Partial<Settings>): Settings {
     },
     actionKeys: saved.actionKeys?.length ? saved.actionKeys : DEFAULT_SETTINGS.actionKeys,
     resetKeys: saved.resetKeys ?? DEFAULT_SETTINGS.resetKeys,
+    cheatKeys: saved.cheatKeys ?? DEFAULT_SETTINGS.cheatKeys,
   };
 }
 
 function load(): Settings {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     return normalizeSettings(JSON.parse(raw) as Partial<Settings>);
   } catch {
+    // 읽지 못한 저장값은 기본값으로 덮어쓰기 전에 따로 보관
+    try {
+      if (raw) localStorage.setItem(`${STORAGE_KEY}:unreadable`, raw);
+    } catch {
+      /* storage unavailable */
+    }
     return DEFAULT_SETTINGS;
   }
 }

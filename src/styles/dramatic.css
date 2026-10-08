@@ -96,6 +96,26 @@
   animation: rv-result 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) 0.1s both;
 }
 
+/* ───────── 목표 시간 맞추기 (settle) ─────────
+   숫자가 실제 시간 → 목표 시간으로 굴러가는 동안 점점 조여들고, 닿는 순간 위의 is-dramatic 공개 연출로 이어짐 */
+.reveal-veil.is-settle {
+  animation-duration: calc(var(--settle-ms) * 0.6);
+}
+
+.phase-settle .titles {
+  opacity: 0.2;
+  transition: opacity 0.4s;
+}
+
+.phase-settle .frame {
+  --glow-color: var(--success);
+  animation: rv-build var(--settle-ms) cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+
+.live.is-settling .live-digits {
+  animation: st-roll 90ms linear infinite;
+}
+
 /* ───────── keyframes ───────── */
 @keyframes rv-breathe {
   50% {
@@ -229,5 +249,15 @@
     opacity: 1;
     scale: 1;
     filter: none;
+  }
+}
+
+@keyframes st-roll {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -0.02em;
   }
 }

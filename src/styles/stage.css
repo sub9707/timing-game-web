@@ -369,7 +369,8 @@
   border-radius: 8px;
 }
 
-.phase-reveal .key-hint {
+.phase-reveal .key-hint,
+.phase-settle .key-hint {
   opacity: 0;
 }
 
@@ -395,6 +396,7 @@
 
 .phase-confirm .dock,
 .phase-reveal .dock,
+.phase-settle .dock,
 .phase-running .dock {
   opacity: 0;
   pointer-events: none;

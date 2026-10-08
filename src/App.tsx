@@ -15,6 +15,8 @@ import type { GameResult, Phase, StagePreview } from './types';
 /** 버튼 채터링/연타 방지 */
 const MIN_RUN_MS = 150;
 const MIN_RESULT_MS = 700;
+/** 숫자가 목표 시간에 닿은 뒤 성공을 터뜨리기 전 잠깐 멈춤 */
+const SETTLE_HOLD_MS = 280;
 
 export default function App() {
   const [settings, setSettings] = useSettings();
@@ -33,8 +35,9 @@ export default function App() {
   /* ───── 게임 진행 ───── */
 
   const overlayOpen = settingsOpen || infoOpen;
-  const state = useRef({ phase, startAt, lastAction: 0, settings, overlayOpen });
+  const state = useRef({ phase, startAt, lastAction: 0, settings, overlayOpen, result });
   state.current.phase = phase;
+  state.current.result = result;
   state.current.startAt = startAt;
   state.current.settings = settings;
   state.current.overlayOpen = overlayOpen;
@@ -42,9 +45,39 @@ export default function App() {
   const cancelReveal = () => clearTimeout(revealTimer.current);
   useEffect(() => cancelReveal, []);
 
-  const press = useCallback((t: number, kind: 'action' | 'reset') => {
+  /** 결과 화면으로. 굴러갈 숫자(fromMs)가 있으면 settle 연출을 먼저 거침 */
+  const showResult = useCallback((r: GameResult, dramatic: boolean) => {
+    const finish = (hit: boolean) => {
+      state.current.lastAction = performance.now();
+      setDramaticHit(hit);
+      setRound((n) => n + 1);
+      setPhase('result');
+    };
+    if (r.fromMs === undefined || r.fromMs === r.elapsedMs) {
+      finish(dramatic);
+      return;
+    }
+    setDramaticHit(false);
+    setPhase('settle');
+    revealTimer.current = window.setTimeout(() => finish(true), (r.settleMs ?? 0) + SETTLE_HOLD_MS);
+  }, []);
+
+  const press = useCallback((t: number, kind: 'action' | 'reset' | 'cheat') => {
     const st = state.current;
     const since = t - st.lastAction;
+
+    if (kind === 'cheat') {
+      // 실패 화면에서만: 목표 시간으로 굴러간 뒤 성공 처리
+      const r = st.result;
+      if (st.phase !== 'result' || !r || r.success) return;
+      st.lastAction = t;
+      const { targetMs } = st.settings;
+      const next = { elapsedMs: targetMs, diffMs: 0, success: true, fromMs: r.elapsedMs, settleMs: st.settings.cheatSettleMs };
+      st.result = next;
+      setResult(next);
+      showResult(next, true);
+      return;
+    }
 
     if (kind === 'reset') {
       // 운영자용: 진행 중 취소 또는 결과 화면 리셋
@@ -66,29 +99,35 @@ export default function App() {
       // 화면에 보이는 1/100초 값으로 판정
       const realMs = toCs(t - st.startAt) * 10;
       const success = isWithinTolerance(st.settings, realMs - targetMs);
-      // 성공 시 목표 시간으로 보여주기 옵션
-      const elapsedMs = success && st.settings.snapToTarget ? targetMs : realMs;
-      setResult({ elapsedMs, diffMs: elapsedMs - targetMs, success });
+      // 성공 시 목표 시간으로 보여주기 옵션 (연출을 켜면 실제 시간에서 굴러감)
+      const snap = success && st.settings.snapToTarget;
+      const elapsedMs = snap ? targetMs : realMs;
+      const animate = snap && st.settings.snapAnimate;
+      const next: GameResult = {
+        elapsedMs,
+        diffMs: elapsedMs - targetMs,
+        success,
+        ...(animate && { fromMs: realMs, settleMs: st.settings.settleMs }),
+      };
+      st.result = next;
+      setResult(next);
       // 블라인드로 가려진 채 멈췄으면 바로 공개하지 않고 한 번 더 묻기
       const { blind, blindAfterMs, dramatic } = st.settings;
       if (blind && dramatic && t - st.startAt >= blindAfterMs) {
         setPhase('confirm');
         return;
       }
-      setRound((r) => r + 1);
-      setPhase('result');
+      showResult(next, false);
     } else if (st.phase === 'confirm') {
       if (since < MIN_RESULT_MS) return;
       st.lastAction = t;
       setPhase('reveal');
       revealTimer.current = window.setTimeout(() => {
-        state.current.lastAction = performance.now();
-        setDramaticHit(true);
-        setRound((r) => r + 1);
-        setPhase('result');
+        const r = state.current.result;
+        if (r) showResult(r, true);
       }, st.settings.dramaticMs);
-    } else if (st.phase === 'reveal') {
-      return; // 긴장 연출 중엔 진행 키 무시 (리셋 키로만 취소)
+    } else if (st.phase === 'reveal' || st.phase === 'settle') {
+      return; // 연출 중엔 진행 키 무시 (리셋 키로만 취소)
     } else {
       // 리셋 키가 따로 지정돼 있으면 진행 키로는 리셋 불가
       if (st.settings.resetKeys.length > 0 || since < MIN_RESULT_MS) return;
@@ -96,7 +135,7 @@ export default function App() {
       setResult(null);
       setPhase('idle');
     }
-  }, []);
+  }, [showResult]);
 
   /* ───── 키보드: 매핑된 키 외 전부 차단 ───── */
 
@@ -115,8 +154,8 @@ export default function App() {
       e.preventDefault();
       e.stopPropagation();
       if (e.type !== 'keydown' || e.repeat) return;
-      const { actionKeys, resetKeys } = state.current.settings;
-      const kind = resetKeys.includes(e.code) ? 'reset' : actionKeys.includes(e.code) ? 'action' : null;
+      const { actionKeys, resetKeys, cheatKeys } = state.current.settings;
+      const kind = resetKeys.includes(e.code) ? 'reset' : actionKeys.includes(e.code) ? 'action' : cheatKeys.includes(e.code) ? 'cheat' : null;
       if (!kind) return;
       const now = performance.now();
       // keydown 발생 시각을 그대로 사용해 렌더 지연 영향을 없앰
@@ -189,11 +228,12 @@ export default function App() {
   return (
     <div
       className={`app theme-${settings.theme} phase-${viewPhase} ${outcome} ${dramaticHit && !pv ? 'is-dramatic' : ''} ${pv ? 'is-previewing' : ''} ${dv.className}`}
-      style={{ ...themeVars, '--reveal-ms': `${settings.dramaticMs}ms` } as CSSProperties}
+      style={{ ...themeVars, '--reveal-ms': `${settings.dramaticMs}ms`, '--settle-ms': `${viewResult?.settleMs ?? settings.settleMs}ms` } as CSSProperties}
       onContextMenu={(e) => e.preventDefault()}
     >
       <Background bg={settings.bg} imageUrl={bgImage.url} />
       {phase === 'reveal' && <div className="reveal-veil" aria-hidden />}
+      {phase === 'settle' && <div className="reveal-veil is-settle" aria-hidden />}
       {shown && dramaticHit && <div key={round} className="reveal-flash" aria-hidden />}
 
       <main className="stage">
@@ -223,6 +263,8 @@ export default function App() {
               phase={viewPhase}
               startAt={startAt}
               stoppedMs={viewResult?.elapsedMs ?? 0}
+              fromMs={viewResult?.fromMs}
+              settleMs={viewResult?.settleMs ?? settings.settleMs}
               blind={settings.blind}
               blindAfterMs={settings.blindAfterMs}
               blindFx={settings.blindFx}
@@ -236,7 +278,7 @@ export default function App() {
 
         <div className="key-hint" aria-hidden>
           <kbd>{keyLabel(viewPhase === 'result' && settings.resetKeys.length ? settings.resetKeys[0] : settings.actionKeys[0])}</kbd>
-          <span>{viewPhase === 'idle' ? 'START' : viewPhase === 'running' ? 'STOP' : viewPhase === 'confirm' || viewPhase === 'reveal' ? 'REVEAL' : 'RESET'}</span>
+          <span>{viewPhase === 'idle' ? 'START' : viewPhase === 'running' ? 'STOP' : viewPhase === 'confirm' || viewPhase === 'reveal' || viewPhase === 'settle' ? 'REVEAL' : 'RESET'}</span>
         </div>
       </main>
 
