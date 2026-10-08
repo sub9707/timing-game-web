@@ -142,10 +142,14 @@ export interface RevealPromptStyle {
 
 export interface Settings {
   targetMs: number;
-  /** pct: 목표 시간의 % · ms: 고정 ±ms */
+  /** pct: 목표 시간의 ±% · ms: 성공 구간 양 끝을 직접 지정 */
   toleranceMode: 'pct' | 'ms';
   tolerancePct: number;
-  toleranceFixedMs: number;
+  /** 직접 입력: 목표보다 이른 쪽 / 늦은 쪽 허용 ms (목표 시간이 바뀌어도 구간이 함께 이동) */
+  toleranceBelowMs: number;
+  toleranceAboveMs: number;
+  /** 성공하면 실제 멈춘 시간 대신 목표 시간을 보여줌 */
+  snapToTarget: boolean;
   blind: boolean;
   blindAfterMs: number;
   blindFx: BlindSetting;

@@ -11,7 +11,9 @@ export const DEFAULT_SETTINGS: Settings = {
   targetMs: 15000,
   toleranceMode: 'pct',
   tolerancePct: 0,
-  toleranceFixedMs: 0,
+  toleranceBelowMs: 0,
+  toleranceAboveMs: 0,
+  snapToTarget: false,
   blind: false,
   blindAfterMs: 3000,
   dramatic: false,
@@ -71,6 +73,12 @@ function mergeResultStyle(base: ResultTextStyle, saved?: Partial<ResultTextStyle
 
 /** 부분 저장값을 기본값과 병합해 완전한 Settings 로 만듦 (localStorage · 가져오기 공용) */
 export function normalizeSettings(saved: Partial<Settings>): Settings {
+  // 이전 버전의 ±고정값 → 양 끝 값으로
+  const legacyFixed = (saved as { toleranceFixedMs?: number }).toleranceFixedMs;
+  if (legacyFixed !== undefined) {
+    saved = { toleranceBelowMs: legacyFixed, toleranceAboveMs: legacyFixed, ...saved };
+    delete (saved as { toleranceFixedMs?: number }).toleranceFixedMs;
+  }
   const theme = THEMES.some((t) => t.id === saved.theme) ? saved.theme! : DEFAULT_SETTINGS.theme;
   return {
     ...DEFAULT_SETTINGS,
@@ -121,6 +129,14 @@ export function useSettings() {
   return [settings, setSettings] as const;
 }
 
-/** 허용 오차(ms). 0 이면 1/100초 단위로 정확히 일치해야 성공 */
-export const toleranceMs = (s: Settings) =>
-  s.toleranceMode === 'ms' ? s.toleranceFixedMs : Math.round((s.targetMs * s.tolerancePct) / 100);
+/** 허용 오차(ms) — 목표보다 이른 쪽(below)·늦은 쪽(above). 둘 다 0 이면 1/100초 단위로 정확히 일치해야 성공 */
+export function toleranceRange(s: Settings) {
+  if (s.toleranceMode === 'ms') return { below: s.toleranceBelowMs, above: s.toleranceAboveMs };
+  const t = Math.round((s.targetMs * s.tolerancePct) / 100);
+  return { below: t, above: t };
+}
+
+export function isWithinTolerance(s: Settings, diffMs: number) {
+  const { below, above } = toleranceRange(s);
+  return diffMs >= -below && diffMs <= above;
+}

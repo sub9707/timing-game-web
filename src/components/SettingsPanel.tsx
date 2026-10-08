@@ -5,7 +5,7 @@ import { fillGradient } from '../design';
 import type { ImageKey, useStoredImage } from '../imageStore';
 import { clampWeight, FONT_IDS, FONTS } from '../fonts';
 import { keyLabel, RESERVED_KEYS } from '../keys';
-import { DEFAULT_SETTINGS, toleranceMs } from '../settings';
+import { DEFAULT_SETTINGS, toleranceRange } from '../settings';
 import { COLOR_SWATCHES, FILL_PRESETS, getTheme, GRADIENT_PRESETS, SOLID_SWATCHES, THEMES } from '../themes';
 import type { BackgroundSetting, BgMode, BlindSetting, StagePreview, DesignSetting, Fill, FontId, Settings, ThemeId } from '../types';
 import { backgroundCss, gradientCss } from './Background';
@@ -79,7 +79,8 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
   const setResultStyle = (patch: Partial<Settings['resultStyle']['success']>) =>
     onChange((prev) => ({ ...prev, resultStyle: { ...prev.resultStyle, [resultTab]: { ...prev.resultStyle[resultTab], ...patch } } }));
 
-  const tol = toleranceMs(s);
+  const tol = toleranceRange(s);
+  const exact = tol.below === 0 && tol.above === 0;
   const [tab, setTab] = useState<Tab>('game');
   const [confirmReset, setConfirmReset] = useState(false);
   const [backupMsg, setBackupMsg] = useState('');
@@ -138,7 +139,10 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                 <Toggle label="화면에 목표 시간 표시" checked={s.showTarget} onChange={(v) => set({ showTarget: v })} />
               </Section>
 
-              <Section title="허용 오차" aside={tol === 0 ? '정확히' : `±${(tol / 1000).toFixed(2)}s`}>
+              <Section
+                title="허용 오차"
+                aside={exact ? '정확히' : tol.below === tol.above ? `±${(tol.below / 1000).toFixed(2)}s` : `−${(tol.below / 1000).toFixed(2)}s / +${(tol.above / 1000).toFixed(2)}s`}
+              >
                 <Segmented<Settings['toleranceMode']>
                   value={s.toleranceMode}
                   options={[
@@ -158,22 +162,35 @@ export function SettingsPanel({ open, settings: s, onChange, bgImage, blindImage
                   />
                 ) : (
                   <div className="tol-fixed">
-                    <span>±</span>
                     <NumberInput
-                      value={s.toleranceFixedMs / 1000}
+                      value={(s.targetMs - s.toleranceBelowMs) / 1000}
                       min={0}
+                      max={s.targetMs / 1000}
+                      decimals={2}
+                      fixed
+                      suffix="초"
+                      onCommit={(v) => set({ toleranceBelowMs: Math.max(0, s.targetMs - Math.round(v * 100) * 10) })}
+                    />
+                    <span>~</span>
+                    <NumberInput
+                      value={(s.targetMs + s.toleranceAboveMs) / 1000}
+                      min={s.targetMs / 1000}
                       max={3599.99}
                       decimals={2}
                       fixed
                       suffix="초"
-                      onCommit={(v) => set({ toleranceFixedMs: Math.round(v * 100) * 10 })}
+                      onCommit={(v) => set({ toleranceAboveMs: Math.max(0, Math.round(v * 100) * 10 - s.targetMs) })}
                     />
                   </div>
                 )}
                 <p className="hint-text">
-                  {tol === 0
+                  {exact
                     ? `${(s.targetMs / 1000).toFixed(2)}s 에 정확히 멈춰야 성공`
-                    : `${((s.targetMs - tol) / 1000).toFixed(2)}s ~ ${((s.targetMs + tol) / 1000).toFixed(2)}s 성공`}
+                    : `${((s.targetMs - tol.below) / 1000).toFixed(2)}s ~ ${((s.targetMs + tol.above) / 1000).toFixed(2)}s 성공`}
+                </p>
+                <Toggle label="성공하면 목표 시간으로 표시" checked={s.snapToTarget} onChange={(v) => set({ snapToTarget: v })} />
+                <p className="hint-text">
+                  {s.snapToTarget ? '허용 오차 안이면 실제 시간 대신 목표 시간(PERFECT)을 보여줘요' : '허용 오차 안이어도 실제로 멈춘 시간을 그대로 보여줘요'}
                 </p>
               </Section>
 

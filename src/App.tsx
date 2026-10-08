@@ -7,7 +7,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { Digits, LiveTimer } from './components/Timer';
 import { designVars, lineStyle } from './design';
 import { useStoredImage } from './imageStore';
-import { toleranceMs, useSettings } from './settings';
+import { isWithinTolerance, useSettings } from './settings';
 import { keyLabel, RESERVED_KEYS } from './keys';
 import { toCs } from './time';
 import type { GameResult, Phase, StagePreview } from './types';
@@ -64,10 +64,11 @@ export default function App() {
       st.lastAction = t;
       const { targetMs } = st.settings;
       // 화면에 보이는 1/100초 값으로 판정
-      const elapsedMs = toCs(t - st.startAt) * 10;
-      const diffMs = elapsedMs - targetMs;
-      const success = Math.abs(diffMs) <= toleranceMs(st.settings);
-      setResult({ elapsedMs, diffMs, success });
+      const realMs = toCs(t - st.startAt) * 10;
+      const success = isWithinTolerance(st.settings, realMs - targetMs);
+      // 성공 시 목표 시간으로 보여주기 옵션
+      const elapsedMs = success && st.settings.snapToTarget ? targetMs : realMs;
+      setResult({ elapsedMs, diffMs: elapsedMs - targetMs, success });
       // 블라인드로 가려진 채 멈췄으면 바로 공개하지 않고 한 번 더 묻기
       const { blind, blindAfterMs, dramatic } = st.settings;
       if (blind && dramatic && t - st.startAt >= blindAfterMs) {
