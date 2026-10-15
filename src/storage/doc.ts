@@ -11,6 +11,7 @@ import { assetRev, loadMeta, onAssetChange, saveMeta } from './assets';
 import { downloadBlob } from './download';
 import { applyAssets, buildPack, clearAllAssets, OLD_PACK_EXT, PACK_EXT, PACK_MIME, readPack, readThumbnail } from './pack';
 import { thumbnailDataUrl } from './thumbnail';
+import { track } from '../analytics';
 import { tr } from '../i18n';
 
 interface WritableHandle extends FileSystemFileHandle {
@@ -143,6 +144,7 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
   const markSaved = (name: string, saved = JSON.stringify(latest.current)) => {
     setMeta({ name, saved, rev: assetRev() });
     setFileSavedAt(Date.now());
+    track('file_save');
   };
 
   const attach = (h: WritableHandle | null) => {
@@ -215,13 +217,14 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
   };
 
   /** 파일 내용으로 바꾸고 그 파일에 연결 (불러오기·끌어다 놓기·최근 파일 공용) */
-  const load = async (file: File | Blob, name: string, h: WritableHandle | null): Promise<DocResult> => {
+  const load = async (file: File | Blob, name: string, h: WritableHandle | null, fromBackup = false): Promise<DocResult> => {
     let pack;
     try {
       pack = await readPack(file);
     } catch {
       return { ok: false, message: tr('스토피아 파일이 아니에요') };
     }
+    if (!fromBackup) track('file_open');
     await applyAssets(pack);
     if (!pack.legacy) recordsApi.replace(pack.records ?? []);
     onReplace?.(pack.settings);
@@ -317,7 +320,7 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
   /** 백업으로 되돌리기 (새 문서로 열림 — 저장하면 위치를 다시 고름) */
   const restoreBackup = (b: Backup) =>
     run(async () => {
-      const r = await load(b.blob, tr('백업 {0}', new Date(b.at).toLocaleString()), null);
+      const r = await load(b.blob, tr('백업 {0}', new Date(b.at).toLocaleString()), null, true);
       return r?.ok ? { ok: true, message: tr('{0} 백업으로 되돌렸어요', new Date(b.at).toLocaleTimeString()) } : r;
     });
 

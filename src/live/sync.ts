@@ -1,5 +1,6 @@
 // 송출 창 — 운영자 창(메인)이 상태를 보내고, 송출 창은 받아서 무대만 그림 (같은 브라우저 안 BroadcastChannel)
 import { useEffect, useRef, useState } from 'react';
+import { track } from '../analytics';
 import { notifyAsset, onAssetChange } from '../storage/assets';
 import type { GameResult, Phase, RoundRecord, Settings } from '../types';
 
@@ -34,6 +35,7 @@ export type PressKind = 'action' | 'reset' | 'cheat';
 type Msg = { type: 'state'; snap: Wire } | { type: 'hello' } | { type: 'bye' } | { type: 'press'; kind: PressKind } | { type: 'asset'; key: string };
 
 export function openOutputWindow() {
+  track('output_open');
   const url = new URL(location.href);
   url.searchParams.set('output', '1');
   window.open(url.toString(), 'stopia-output', 'popup,width=1280,height=720');

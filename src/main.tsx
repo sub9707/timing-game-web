@@ -20,10 +20,13 @@ import './styles/blind.css';
 import './styles/dramatic.css';
 import './styles/panel.css';
 
+import { initAnalytics } from './analytics';
 import App from './App';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isOutputWindow } from './live/sync';
 import OutputApp from './OutputApp';
+
+initAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

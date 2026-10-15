@@ -23,6 +23,7 @@ import { useIdleCursor } from './hooks/useIdleCursor';
 import { useLocalState } from './hooks/useLocalState';
 import { useLock } from './hooks/useLock';
 import { useStageView } from './hooks/useStageView';
+import { track, useGameAnalytics } from './analytics';
 import { openOutputWindow, usePublisher } from './live/sync';
 import { useCustomFonts } from './settings/fonts';
 import { useSettings } from './settings/settings';
@@ -89,6 +90,8 @@ export default function App() {
   const overlayRef = useRef(overlayOpen);
   overlayRef.current = overlayOpen;
 
+  useGameAnalytics(game.phase, game.result, game.targetMs, { enabled: !settingsOpen, blind: settings.blind });
+
   const press = useCallback((kind: PressKind, t = performance.now()) => {
     if (overlayRef.current) return;
     gameRef.current.press(t, kind);
@@ -123,6 +126,7 @@ export default function App() {
 
   /** 설정 열기 (잠금은 PIN 으로 풀린 뒤 부름) */
   const doOpenSettings = () => {
+    track('settings_open');
     game.goIdle();
     setPreview(null);
     setInfoOpen(false);
@@ -160,6 +164,7 @@ export default function App() {
     if (anyFullscreen) return;
     if (lock.locked && !unlocked) return setPinFor('edit');
     if (!settingsOpen) doOpenSettings();
+    track('edit_open');
     setEditing(true);
     setSelected([]);
   };
@@ -215,6 +220,9 @@ export default function App() {
   const pv = settingsOpen ? preview : null;
   const { view, phaseRef: viewPhaseRef } = useStageView(game, pv);
   const board = boardOpen ? ranking(records, settings.leaderboard) : null;
+  useEffect(() => {
+    if (boardOpen) track('leaderboard_open');
+  }, [boardOpen]);
 
   /** 텍스트 요소의 제자리 편집 연결 (편집 모드에서만 켜짐) */
   const textEdit = (id: EditId): TextEditProps => ({

@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { CONSENT_DEFAULT } from './src/consentRegions';
 import { SEO, SITE_NAME, type SeoText } from './src/seo';
 
 /** 애드센스 ads.txt — .env 의 게시자 ID 로 빌드 때 만듦 (없으면 만들지 않음) */
@@ -10,6 +11,29 @@ function adsTxt(client: string | undefined): Plugin {
       const pub = client?.replace(/^ca-/, '').trim();
       if (!pub) return;
       this.emitFile({ type: 'asset', fileName: 'ads.txt', source: `google.com, ${pub}, DIRECT, f08c47fec0942fa0\n` });
+    },
+  };
+}
+
+/**
+ * 가이드 페이지에 방문 통계 태그 — <!--analytics--> 자리에 넣음 (ID 가 없거나 개발 서버면 빈칸)
+ * 앱 화면(index.html)은 src/analytics.ts 가 직접 불러옴 (송출 창 제외 처리 때문)
+ */
+function pageAnalytics(gaId: string | undefined): Plugin {
+  const id = gaId?.trim();
+  return {
+    name: 'page-analytics',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        if (!html.includes('<!--analytics-->')) return html;
+        const tag =
+          id && !ctx.server
+            ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',${JSON.stringify(CONSENT_DEFAULT)});gtag('js',new Date());gtag('config','${id}');</script>`
+            : '';
+        return html.replace('<!--analytics-->', tag);
+      },
     },
   };
 }
@@ -158,9 +182,12 @@ export default defineConfig(({ mode }) => {
   const site = env.VITE_SITE_URL?.trim();
   return {
     base: './',
+    // 앱 + 가이드 페이지 (가이드는 글 페이지 — 검색·애드센스 심사용)
+    build: { rollupOptions: { input: { main: 'index.html', guide: 'guide.html', guideEn: 'en/guide.html' } } },
     plugins: [
       react(),
       adsTxt(env.VITE_ADSENSE_CLIENT),
+      pageAnalytics(env.VITE_GA_ID),
       seo({
         site: site ? (site.endsWith('/') ? site : site + '/') : '',
         google: env.VITE_GOOGLE_SITE_VERIFICATION,
