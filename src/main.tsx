@@ -31,9 +31,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// 오프라인 실행 (앱 설치·행사장 인터넷 끊김 대비) — 배포 빌드에서만
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => undefined);
-  });
+// 예전에 등록된 서비스 워커(앱 설치·오프라인) 정리 — 항상 최신 사이트를 받도록
+if ('serviceWorker' in navigator) {
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => regs.forEach((r) => void r.unregister()))
+    .catch(() => undefined);
 }

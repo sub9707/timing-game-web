@@ -16,7 +16,6 @@ export interface PanelApp {
   /** 열린 송출 창 수 */
   outputs: number;
   openOutput: () => void;
-  install: { canInstall: boolean; installed: boolean; install: () => Promise<void> };
   zoom: Zoom;
   setZoom: (z: Zoom) => void;
   insert: (kind: InsertKind) => void;
