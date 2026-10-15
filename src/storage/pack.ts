@@ -1,4 +1,4 @@
-// 저장 파일 형식 (.tcpack) — 표준 ZIP
+// 저장 파일 형식 (.stopia) — 표준 ZIP (예전 .tcpack 도 같은 구조)
 //   manifest.json   형식·버전·에셋 목록
 //   settings.json   전체 설정
 //   records.json    기록 (있으면)
@@ -12,9 +12,12 @@ import type { RoundRecord, Settings } from '../types';
 import { BUILTIN_ASSETS, listAssetKeys, loadAsset, putAsset, type AssetKey } from './assets';
 import { makeThumbnail } from './thumbnail';
 
-export const PACK_EXT = '.tcpack';
-export const PACK_MIME = 'application/x-time-challenge-pack';
-const FORMAT = 'time-challenge-pack';
+export const PACK_EXT = '.stopia';
+/** 이름 바꾸기 전 확장자 — 계속 열 수 있음 */
+export const OLD_PACK_EXT = '.tcpack';
+export const PACK_MIME = 'application/x-stopia';
+const FORMAT = 'stopia-pack';
+const OLD_FORMATS = ['time-challenge-pack'];
 const VERSION = 2;
 /** 예전 설정 백업(JSON) */
 const LEGACY_FORMAT = 'timer-game-settings';
@@ -27,7 +30,7 @@ interface AssetEntry {
 }
 
 interface Manifest {
-  format: typeof FORMAT;
+  format: string;
   version: number;
   app: string;
   exportedAt: string;
@@ -90,7 +93,7 @@ export async function buildPack(settings: Settings): Promise<Blob> {
   const manifest: Manifest = {
     format: FORMAT,
     version: VERSION,
-    app: 'Time Challenge',
+    app: 'Stopia',
     exportedAt: new Date().toISOString(),
     settings: 'settings.json',
     ...(records.length && { records: 'records.json' }),
@@ -104,14 +107,14 @@ export async function buildPack(settings: Settings): Promise<Blob> {
   return new Blob([zipSync(files) as Uint8Array<ArrayBuffer>], { type: PACK_MIME });
 }
 
-/** .tcpack(·.zip) 또는 예전 .json 백업 읽기. 잘못된 파일이면 throw */
+/** .stopia(·.tcpack·.zip) 또는 예전 .json 백업 읽기. 잘못된 파일이면 throw */
 export async function readPack(file: Blob): Promise<Pack> {
   const buf = new Uint8Array(await file.arrayBuffer());
   const isZip = buf[0] === 0x50 && buf[1] === 0x4b; // "PK"
 
   if (!isZip) {
     const data = JSON.parse(new TextDecoder().decode(buf)) as { format?: string; settings?: unknown };
-    if (data?.format !== LEGACY_FORMAT || typeof data.settings !== 'object' || data.settings === null) throw new Error('not a time challenge file');
+    if (data?.format !== LEGACY_FORMAT || typeof data.settings !== 'object' || data.settings === null) throw new Error('not a stopia file');
     return { settings: normalizeSettings(data.settings), assets: {}, records: null, legacy: true };
   }
 
@@ -119,7 +122,7 @@ export async function readPack(file: Blob): Promise<Pack> {
   const raw = files['manifest.json'];
   if (!raw) throw new Error('manifest missing');
   const manifest = JSON.parse(strFromU8(raw)) as Partial<Manifest>;
-  if (manifest.format !== FORMAT) throw new Error('unknown format');
+  if (manifest.format !== FORMAT && !OLD_FORMATS.includes(manifest.format ?? '')) throw new Error('unknown format');
   if ((manifest.version ?? 0) > VERSION) throw new Error('newer version');
   const settingsRaw = files[manifest.settings ?? 'settings.json'];
   if (!settingsRaw) throw new Error('settings missing');

@@ -50,7 +50,7 @@ export default function App() {
   const history = useHistory(settings, setSettings);
   const historyRef = useRef(history);
   historyRef.current = history;
-  /** 저장 파일(.tcpack) — 파일을 불러오면 그 전 실행 취소 기록은 지움 (파워포인트와 같음) */
+  /** 저장 파일(.stopia) — 파일을 불러오면 그 전 실행 취소 기록은 지움 (파워포인트와 같음) */
   const doc = useDocument(settings, setSettings, history.reset);
   const docRef = useRef(doc);
   docRef.current = doc;

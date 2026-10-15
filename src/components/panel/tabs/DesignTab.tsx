@@ -1,7 +1,7 @@
 // 디자인 탭: 화면 비율 · 템플릿 · 기본 색 · 배경 · 요소별 모양
 import { useState } from 'react';
 import { fontDef } from '../../../settings/fonts';
-import { templateFrom, THEME_EXT, useTemplates, type UserTemplate } from '../../../settings/templates';
+import { OLD_THEME_EXT, templateFrom, THEME_EXT, useTemplates, type UserTemplate } from '../../../settings/templates';
 import { COLOR_SWATCHES, getTheme, GRADIENT_PRESETS, SOLID_SWATCHES, THEMES } from '../../../settings/themes';
 import type { BgMode, CanvasAspect, ResultFxSetting, ThemeId } from '../../../types';
 import { BorderBlock, BorderColorBlock, DigitColorBlock, DigitFontBlock, DigitSizeRange, fillMeta, Glow, PlateBlock, TEXT_SWATCHES, TextFxBlock } from '../blocks';
@@ -111,7 +111,7 @@ export function DesignTab() {
               {tr('템플릿 파일 가져오기')}
               <input
                 type="file"
-                accept={`${THEME_EXT},application/json`}
+                accept={`${THEME_EXT},${OLD_THEME_EXT},application/json`}
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   e.target.value = '';

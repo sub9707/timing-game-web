@@ -97,7 +97,7 @@ export function RecordsTab() {
           <button
             className="ghost-btn"
             disabled={!records.length}
-            onClick={() => downloadBlob(new Blob([toCsv(records)], { type: 'text/csv;charset=utf-8' }), `time-challenge-records-${new Date().toISOString().slice(0, 10)}.csv`)}
+            onClick={() => downloadBlob(new Blob([toCsv(records)], { type: 'text/csv;charset=utf-8' }), `stopia-records-${new Date().toISOString().slice(0, 10)}.csv`)}
           >
             {tr('CSV 내보내기')}
           </button>
@@ -113,7 +113,7 @@ export function RecordsTab() {
             {confirmClear ? tr('한 번 더 누르면 모두 삭제') : tr('모두 삭제')}
           </button>
         </div>
-        <Hint>{tr('✱ 는 치트로 성공 처리된 기록 · 기록은 저장 파일(.tcpack)에도 함께 저장돼요')}</Hint>
+        <Hint>{tr('✱ 는 치트로 성공 처리된 기록 · 기록은 저장 파일(.stopia)에도 함께 저장돼요')}</Hint>
       </Section>
     </>
   );

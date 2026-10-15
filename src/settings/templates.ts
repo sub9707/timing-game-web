@@ -1,4 +1,4 @@
-// 내 템플릿 — 지금 디자인(색·배경·글꼴·테두리)을 저장해 두고 다시 적용 · .tctheme 파일로 주고받기
+// 내 템플릿 — 지금 디자인(색·배경·글꼴·테두리)을 저장해 두고 다시 적용 · .stopiatheme 파일로 주고받기
 import { useEffect, useState } from 'react';
 import { uid } from '../design/layout';
 import { downloadBlob } from '../storage/download';
@@ -6,8 +6,11 @@ import type { BackgroundSetting, DesignSetting, Settings, ThemeId } from '../typ
 import { normalizeSettings } from './settings';
 
 const KEY = 'timer-game:templates';
-export const THEME_EXT = '.tctheme';
-const FORMAT = 'time-challenge-theme';
+export const THEME_EXT = '.stopiatheme';
+/** 이름 바꾸기 전 확장자 — 계속 가져올 수 있음 */
+export const OLD_THEME_EXT = '.tctheme';
+const FORMAT = 'stopia-theme';
+const OLD_FORMATS = ['time-challenge-theme'];
 
 export interface UserTemplate {
   id: string;
@@ -78,7 +81,7 @@ export function useTemplates() {
     /** 파일에서 가져오기 (잘못된 파일이면 throw) */
     async importFile(file: File) {
       const data = JSON.parse(await file.text()) as { format?: string; template?: Partial<UserTemplate> };
-      if (data.format !== FORMAT || !data.template) throw new Error('not a theme file');
+      if ((data.format !== FORMAT && !OLD_FORMATS.includes(data.format ?? '')) || !data.template) throw new Error('not a theme file');
       const t = data.template;
       // 설정 정규화를 거쳐 빠진 항목은 기본값으로
       const s = normalizeSettings({ theme: t.theme, accent: t.accent, text: t.text, bg: t.bg, design: t.design });

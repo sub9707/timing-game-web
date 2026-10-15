@@ -1,7 +1,7 @@
 // 문서(저장 파일) 관리 — 파워포인트처럼
 //  · 임시 저장: 바뀔 때마다 이 브라우저에 자동 보관 (settings.ts · assets.ts)
 //  · 저장: 처음엔 위치·이름을 고르고(경로 설정), 다음부터 같은 파일에 덮어씀
-//  · 불러오기·끌어다 놓기·최근 파일: .tcpack 하나로 설정·에셋·기록 복원 후 그 파일에 연결
+//  · 불러오기·끌어다 놓기·최근 파일: .stopia 하나로 설정·에셋·기록 복원 후 그 파일에 연결
 //  · 자동 백업: 몇 분마다 지금 상태를 보관 (최근 몇 개)
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { recordsApi } from '../game/records';
@@ -9,7 +9,7 @@ import { DEFAULT_SETTINGS } from '../settings/settings';
 import type { Settings } from '../types';
 import { assetRev, loadMeta, onAssetChange, saveMeta } from './assets';
 import { downloadBlob } from './download';
-import { applyAssets, buildPack, clearAllAssets, PACK_EXT, PACK_MIME, readPack, readThumbnail } from './pack';
+import { applyAssets, buildPack, clearAllAssets, OLD_PACK_EXT, PACK_EXT, PACK_MIME, readPack, readThumbnail } from './pack';
 import { thumbnailDataUrl } from './thumbnail';
 import { tr } from '../i18n';
 
@@ -24,16 +24,16 @@ type PickerWindow = Window & {
 };
 const win = window as PickerWindow;
 
-const SAVE_TYPES = [{ description: tr('타임 챌린지 파일'), accept: { [PACK_MIME]: [PACK_EXT] } }];
-const OPEN_TYPES = [{ description: tr('타임 챌린지 파일'), accept: { [PACK_MIME]: [PACK_EXT], 'application/zip': ['.zip'], 'application/json': ['.json'] } }];
-const PICKER_ID = 'time-challenge';
-const DEFAULT_NAME = tr('타임 챌린지{0}', PACK_EXT);
+const SAVE_TYPES = [{ description: tr('스토피아 파일'), accept: { [PACK_MIME]: [PACK_EXT] } }];
+const OPEN_TYPES = [{ description: tr('스토피아 파일'), accept: { [PACK_MIME]: [PACK_EXT, OLD_PACK_EXT], 'application/zip': ['.zip'], 'application/json': ['.json'] } }];
+const PICKER_ID = 'stopia';
+const DEFAULT_NAME = tr('스토피아{0}', PACK_EXT);
 
 /** 위치를 골라 저장할 수 있는 브라우저인지 (크롬·엣지). 아니면 내려받기로 저장 */
 export const canPickPath = typeof win.showSaveFilePicker === 'function';
 
 /** 끌어다 놓기로 열 수 있는 파일 */
-export const isDocFile = (f: File) => /\.(tcpack|zip|json)$/i.test(f.name);
+export const isDocFile = (f: File) => /\.(stopia|tcpack|zip|json)$/i.test(f.name);
 
 const META_KEY = 'timer-game:doc';
 interface DocMeta {
@@ -61,7 +61,7 @@ function pickFile(): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = `${PACK_EXT},.zip,.json`;
+    input.accept = `${PACK_EXT},${OLD_PACK_EXT},.zip,.json`;
     input.onchange = () => resolve(input.files?.[0] ?? null);
     input.addEventListener('cancel', () => resolve(null));
     input.click();
@@ -220,7 +220,7 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
     try {
       pack = await readPack(file);
     } catch {
-      return { ok: false, message: tr('타임 챌린지 파일이 아니에요') };
+      return { ok: false, message: tr('스토피아 파일이 아니에요') };
     }
     await applyAssets(pack);
     if (!pack.legacy) recordsApi.replace(pack.records ?? []);
@@ -228,12 +228,12 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
     setSettings(pack.settings);
 
     if (pack.legacy) {
-      // 예전 설정 백업: 내용만 가져오고 새 문서로 (저장 시 .tcpack 위치 선택)
+      // 예전 설정 백업: 내용만 가져오고 새 문서로 (저장 시 .stopia 위치 선택)
       attach(null);
       setMeta({ ...EMPTY, rev: assetRev() });
       return { ok: true, message: tr('예전 설정 백업을 불러왔어요. 이미지는 지금 것을 유지해요') };
     }
-    const isPack = name.toLowerCase().endsWith(PACK_EXT);
+    const isPack = [PACK_EXT, OLD_PACK_EXT].some((x) => name.toLowerCase().endsWith(x));
     attach(isPack ? h : null);
     setMeta(isPack ? { name, saved: JSON.stringify(pack.settings), rev: assetRev() } : { ...EMPTY, rev: assetRev() });
     if (isPack) await remember(name, h, await readThumbnail(file));
