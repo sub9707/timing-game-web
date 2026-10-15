@@ -1036,3 +1036,39 @@ body.is-cursor-hidden * {
   color: #f4f4f5;
   font-size: 18px;
 }
+
+/* 언어 바꾸기 — 아이콘 대신 바꿀 언어 글자 */
+.dock-lang {
+  font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+/* 랭킹 화면 위로 메뉴 버튼이 보이도록 (트로피로 닫기) */
+.dock {
+  z-index: 7;
+}
+
+.board-card {
+  position: relative;
+}
+
+.board-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #f4f4f5;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s;
+}
+
+.board-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

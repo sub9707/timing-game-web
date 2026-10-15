@@ -44,6 +44,7 @@ interface Props {
   player: string;
   /** 랭킹 화면 (null 이면 닫힘) */
   board: RoundRecord[] | null;
+  onCloseBoard?: () => void;
   className?: string;
   style?: CSSProperties;
   /** 화면 편집: 제자리 글자 편집 · 숨긴 요소 반투명 · 줌 */
@@ -54,7 +55,7 @@ interface Props {
   children?: ReactNode;
 }
 
-export function Stage({ settings, view, bg, blindImageUrl, player, board, className = '', style, textEdit, showHidden, zoom, onStagePointerDown, children }: Props) {
+export function Stage({ settings, view, bg, blindImageUrl, player, board, onCloseBoard, className = '', style, textEdit, showHidden, zoom, onStagePointerDown, children }: Props) {
   const { design, layout, timeFormat: fmt } = settings;
   const dv = designVars(design, fmt);
   const shown = view.phase === 'result' ? view.result : null;
@@ -193,7 +194,7 @@ export function Stage({ settings, view, bg, blindImageUrl, player, board, classN
         </div>
       </div>
 
-      {board && <Leaderboard rows={board} lb={settings.leaderboard} format={fmt} />}
+      {board && <Leaderboard rows={board} lb={settings.leaderboard} format={fmt} onClose={onCloseBoard} />}
 
       {children}
     </div>

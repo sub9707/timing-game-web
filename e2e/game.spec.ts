@@ -54,3 +54,18 @@ test('화면 탭으로 시작', async ({ page }) => {
   await page.mouse.click(700, 600);
   await expect(page.locator('.app.phase-running')).toBeVisible();
 });
+
+test('랭킹 화면 닫기 — 바깥 클릭 · × · 트로피 버튼', async ({ page }) => {
+  await seed(page);
+  const trophy = page.getByRole('button', { name: '랭킹', exact: true });
+  await trophy.click();
+  await expect(page.locator('.board')).toBeVisible();
+  await page.mouse.click(40, 40);
+  await expect(page.locator('.board')).toHaveCount(0);
+  await trophy.click();
+  await page.getByRole('button', { name: '랭킹 닫기' }).click();
+  await expect(page.locator('.board')).toHaveCount(0);
+  await trophy.click();
+  await trophy.click();
+  await expect(page.locator('.board')).toHaveCount(0);
+});

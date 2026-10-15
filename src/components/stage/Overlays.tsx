@@ -25,11 +25,18 @@ export function Countdown({ at, sec }: { at: number; sec: number }) {
   );
 }
 
-/** 랭킹 화면 — 오차가 작은 순 */
-export function Leaderboard({ rows, lb, format }: { rows: RoundRecord[]; lb: LeaderboardSetting; format: TimeFormat }) {
+/** 랭킹 화면 — 오차가 작은 순 (onClose 가 있으면 바깥 클릭·× 로 닫힘, 송출 창은 운영자가 닫음) */
+export function Leaderboard({ rows, lb, format, onClose }: { rows: RoundRecord[]; lb: LeaderboardSetting; format: TimeFormat; onClose?: () => void }) {
   return (
-    <div className="board" role="dialog" aria-label={tr('랭킹')}>
+    <div className="board" role="dialog" aria-label={tr('랭킹')} onPointerDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="board-card">
+        {onClose && (
+          <button className="board-close" onClick={onClose} aria-label={tr('랭킹 닫기')} title={tr('랭킹 닫기')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        )}
         <h2 className="board-title">{lb.title}</h2>
         {rows.length === 0 ? (
           <p className="board-empty">{tr('아직 기록이 없어요')}</p>
