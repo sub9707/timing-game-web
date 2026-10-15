@@ -13,6 +13,23 @@ export const SETTINGS_VERSION = 2;
 
 const neon = getTheme('neon');
 
+/** 언어마다 다른 기본 문구 — 한국어·영어 페이지가 저장값을 같이 쓰므로,
+ *  고치지 않은 기본 문구(예전 기본값 포함)는 불러올 때 지금 언어 것으로 바꿈 */
+const LANG_TEXT = {
+  revealPrompt: { ko: '결과를 공개하시겠습니까?', en: 'Reveal the result?', old: [] },
+  mainTitle: { ko: '스토피아 타임 챌린지', en: 'STOPIA TIME CHALLENGE', old: [] },
+  subTitle: { ko: '정해진 시간에 정확히 스톱!', en: 'STOP AT THE EXACT MOMENT', old: ['정확한 순간에 멈춰라'] },
+} satisfies Record<string, { ko: string; en: string; old: string[] }>;
+
+function localizeDefaults(saved: Partial<Settings>): Partial<Settings> {
+  const out = { ...saved };
+  for (const [k, t] of Object.entries(LANG_TEXT) as [keyof typeof LANG_TEXT, (typeof LANG_TEXT)[keyof typeof LANG_TEXT]][]) {
+    const v = out[k];
+    if (v === t.ko || v === t.en || (t.old as string[]).includes(v ?? '')) out[k] = t[lang];
+  }
+  return out;
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   targetMs: 15000,
   strictJudge: false,
@@ -30,7 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   blindAfterMs: 3000,
   dramatic: false,
   dramaticMs: 3000,
-  revealPrompt: lang === 'en' ? 'Reveal the result?' : '결과를 공개하시겠습니까?',
+  revealPrompt: LANG_TEXT.revealPrompt[lang],
   revealPromptStyle: { color: '', ...DEFAULT_BOX },
   blindFx: {
     style: 'dash',
@@ -49,8 +66,8 @@ export const DEFAULT_SETTINGS: Settings = {
     imageRound: true,
   },
   showTarget: true,
-  mainTitle: lang === 'en' ? 'STOPIA TIME CHALLENGE' : '스토피아 타임 챌린지',
-  subTitle: lang === 'en' ? 'STOP AT THE EXACT MOMENT' : '정해진 시간에 정확히 스톱!',
+  mainTitle: LANG_TEXT.mainTitle[lang],
+  subTitle: LANG_TEXT.subTitle[lang],
   successText: 'MISSION SUCCESS',
   failText: 'MISSION FAILED',
   resultStyle: {
@@ -145,7 +162,7 @@ const mergeBox = (saved?: Partial<Box>): Box => ({ ...DEFAULT_BOX, ...saved });
 
 /** 부분 저장값을 기본값과 병합해 완전한 Settings 로 만듦 (localStorage · 가져오기 공용) */
 export function normalizeSettings(saved: Partial<Settings>): Settings {
-  saved = migrate(saved);
+  saved = localizeDefaults(migrate(saved));
   // 이전 버전의 ±고정값 → 양 끝 값으로
   const legacyFixed = (saved as { toleranceFixedMs?: number }).toleranceFixedMs;
   if (legacyFixed !== undefined) {
