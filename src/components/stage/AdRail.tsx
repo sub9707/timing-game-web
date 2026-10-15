@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useSyncExternalStore } from 'react';
-import { tr } from '../../i18n';
+import { rootHref, tr } from '../../i18n';
 
 /* 구글 애드센스 설정 — .env 에 넣으면 적용 (.env.example 참고)
    비어 있으면 광고 영역을 만들지 않음 (개발 서버에서만 자리 표시) */
@@ -122,7 +122,7 @@ export function ConsentBanner() {
     <div className="consent" role="dialog" aria-label={tr('쿠키 동의')}>
       <p>
         {tr('이 사이트는 운영비를 위해 Google 광고를 보여주며, 광고에 쿠키를 쓸 수 있어요.')}{' '}
-        <a href="privacy.html" target="_blank" rel="noreferrer">
+        <a href={rootHref('privacy.html', true)} target="_blank" rel="noreferrer">
           {tr('개인정보처리방침')}
         </a>
       </p>

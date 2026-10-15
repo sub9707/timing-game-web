@@ -3,14 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="정확한 순간에 멈추는 타이밍 게임 — 행사·방송용 타이머 챌린지" />
     <meta name="theme-color" content="#060814" />
-    <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="icon-192.png" />
-    <title>Time Challenge</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- 제목·설명·OG·구조화 데이터는 빌드 때 채움 (src/seo.ts · vite.config.ts) -->
+    <!--seo:head:start-->
+    <!--seo:head-->
+    <!--seo:head:end-->
+    <style>
+      /* 자바스크립트가 뜨기 전·검색 로봇용 본문 (앱이 뜨면 사라짐) */
+      html,
+      body {
+        background: #060814;
+      }
+      .seo-fallback {
+        max-width: 640px;
+        margin: 18vh auto 0;
+        padding: 0 20px;
+        color: #8b90a8;
+        font: 15px/1.7 system-ui, sans-serif;
+      }
+      .seo-fallback h1 {
+        color: #e8eaff;
+        font-size: 22px;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--seo:body:start--><!--seo:body--><!--seo:body:end--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
