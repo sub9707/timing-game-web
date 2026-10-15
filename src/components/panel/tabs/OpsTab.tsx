@@ -1,10 +1,10 @@
-// 운영 탭: 송출 창 · 잠금 · 커서 · 이미지 최적화 · 앱 설치 · 저장 공간 · 자동 백업
+// 운영 탭: 송출 창 · 잠금 · 커서 · 이미지 최적화 · 저장 공간 · 자동 백업
 import { useEffect, useState } from 'react';
 import { optimizeEnabled, setOptimizeEnabled } from '../../../storage/optimize';
 import { MonitorIcon } from '../../ui/Icons';
 import { usePanel } from '../context';
-import { Hint, Section, Segmented, Toggle } from '../controls';
-import { lang, setLang, tr, type Lang } from '../../../i18n';
+import { Hint, Section, Toggle } from '../controls';
+import { tr } from '../../../i18n';
 
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)}MB`;
 
@@ -64,17 +64,6 @@ export function OpsTab() {
         <Hint>{tr('잠그면 설정을 닫을 때부터 적용돼요 · 게임 조작(키·패드)은 그대로 돼요')}</Hint>
       </Section>
 
-      <Section title="언어 · Language" hint={tr('바꾸면 새로고침돼요 (작업 내용은 저장돼 있어요)')}>
-        <Segmented<Lang>
-          value={lang}
-          onChange={setLang}
-          options={[
-            ['ko', '한국어'],
-            ['en', 'English'],
-          ]}
-        />
-      </Section>
-
       <Section title={tr('화면')}>
         <Toggle label={tr('전체화면에서 마우스 커서 자동 숨김')} checked={app.hideCursor} onChange={app.setHideCursor} />
         <Toggle
@@ -85,18 +74,6 @@ export function OpsTab() {
             setOptimizeEnabled(v);
           }}
         />
-      </Section>
-
-      <Section title={tr('앱으로 설치')} hint={tr('설치하면 인터넷이 끊겨도 실행돼요 (행사장 대비)')}>
-        {app.install.installed ? (
-          <Hint>{tr('이미 앱으로 실행 중이에요')}</Hint>
-        ) : app.install.canInstall ? (
-          <button className="primary-btn" onClick={() => void app.install.install()}>
-            {tr('설치하기')}
-          </button>
-        ) : (
-          <Hint>{tr('브라우저 주소창의 설치 아이콘(또는 메뉴 › 앱 설치)으로 설치할 수 있어요 · 한 번 열어 두면 오프라인에서도 열려요')}</Hint>
-        )}
       </Section>
 
       <Section title={tr('자동 백업')} hint={tr('5분마다 바뀐 게 있으면 이 브라우저에 보관해요 (최근 6개)')}>

@@ -477,11 +477,6 @@ export const EN: Record<string, string> = {
   '화면': 'Screen',
   '전체화면에서 마우스 커서 자동 숨김': 'Auto-hide mouse cursor in fullscreen',
   '올리는 이미지 자동 최적화 (긴 변 2560px)': 'Auto-optimize uploaded images (long side 2560px)',
-  '앱으로 설치': 'Install as app',
-  '설치하면 인터넷이 끊겨도 실행돼요 (행사장 대비)': 'Once installed it runs without internet (handy at venues)',
-  '이미 앱으로 실행 중이에요': 'Already running as an app',
-  '설치하기': 'Install',
-  '브라우저 주소창의 설치 아이콘(또는 메뉴 › 앱 설치)으로 설치할 수 있어요 · 한 번 열어 두면 오프라인에서도 열려요': 'Install via the install icon in the address bar (or menu › Install app) · once opened, it also works offline',
   '자동 백업': 'Auto backup',
   '5분마다 바뀐 게 있으면 이 브라우저에 보관해요 (최근 6개)': 'Every 5 minutes, changes are kept in this browser (latest 6)',
   '아직 백업이 없어요': 'No backups yet',
@@ -623,5 +618,4 @@ export const EN: Record<string, string> = {
   '새 문서를 만들었어요': 'Created a new document',
   '백업 {0}': 'Backup {0}',
   '{0} 백업으로 되돌렸어요': 'Restored the backup from {0}',
-  '바꾸면 새로고침돼요 (작업 내용은 저장돼 있어요)': 'The page reloads when changed (your work is saved)',
 };

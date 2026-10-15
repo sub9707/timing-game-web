@@ -19,7 +19,6 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useGamepad } from './hooks/useGamepad';
 import { useHistory } from './hooks/useHistory';
 import { useIdleCursor } from './hooks/useIdleCursor';
-import { useInstall } from './hooks/useInstall';
 import { useLocalState } from './hooks/useLocalState';
 import { useLock } from './hooks/useLock';
 import { openOutputWindow, usePublisher } from './live/sync';
@@ -28,7 +27,7 @@ import { useSettings } from './settings/settings';
 import { onAssetChange, onAssetError, putAsset, useStoredImage } from './storage/assets';
 import { isDocFile, useDocument } from './storage/doc';
 import type { EditId, FontId, GameResult, Phase, ShapeKind, StagePreview } from './types';
-import { tr } from './i18n';
+import { lang, setLang, tr } from './i18n';
 
 const DEFAULT_VIEW: EditView = { grid: false, snapGrid: false, guides: true, rulers: false, showHidden: false, units: 'pct' };
 const NO_ZOOM: Zoom = { z: 1, x: 0, y: 0 };
@@ -58,7 +57,6 @@ export default function App() {
   useCustomFonts(settings.customFonts);
   const { records, player } = useRecords();
   const lock = useLock();
-  const install = useInstall();
   const fs = useFullscreen();
 
   // 에셋(이미지)은 바뀌는 즉시 임시 저장됨 · 저장 실패(용량 부족)는 알림
@@ -414,6 +412,7 @@ export default function App() {
         blindImageUrl={blindImage.url}
         player={player}
         board={board}
+        onCloseBoard={() => setBoardOpen(false)}
         className={`${pv || editing ? 'is-previewing' : ''} ${editing ? 'is-editing' : ''} ${gesturing ? 'is-gesturing' : ''} ${showAds ? 'has-ads' : ''} ${dragOver ? 'is-drop' : ''}`}
         textEdit={editing ? textEdit : undefined}
         showHidden={editing && editView.showHidden}
@@ -452,6 +451,18 @@ export default function App() {
             >
               <TrophyIcon />
             </button>
+            {/* 언어 바꾸기 (새로고침) — 잠금 중엔 관객이 못 누르게 숨김 */}
+            {!lock.locked && (
+              <button
+                className="dock-btn dock-lang"
+                onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
+                aria-label={lang === 'ko' ? 'English' : '한국어'}
+                title={lang === 'ko' ? 'English' : '한국어'}
+                tabIndex={-1}
+              >
+                {lang === 'ko' ? 'EN' : '한'}
+              </button>
+            )}
             <button className="dock-btn" onClick={toggleFullscreen} aria-label={tr('전체화면')} tabIndex={-1}>
               {fs.app ? <ShrinkIcon /> : <ExpandIcon />}
             </button>
@@ -541,7 +552,6 @@ export default function App() {
           lock,
           outputs,
           openOutput: openOutputWindow,
-          install,
           zoom,
           setZoom,
           insert: (k) => void insert(k),
