@@ -1,0 +1,2 @@
+# 기본 주소로 들어오면 구입한 도메인으로 (검색 중복 방지)
+https://stopia.netlify.app/* https://stopia.site/:splat 301!
