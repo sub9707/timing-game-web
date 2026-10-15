@@ -50,7 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   showTarget: true,
   mainTitle: lang === 'en' ? 'STOPIA TIME CHALLENGE' : '스토피아 타임 챌린지',
-  subTitle: lang === 'en' ? 'STOP AT THE EXACT MOMENT' : '정확한 순간에 멈춰라',
+  subTitle: lang === 'en' ? 'STOP AT THE EXACT MOMENT' : '정해진 시간에 정확히 스톱!',
   successText: 'MISSION SUCCESS',
   failText: 'MISSION FAILED',
   resultStyle: {
