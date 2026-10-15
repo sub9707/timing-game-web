@@ -49,8 +49,8 @@ export const DEFAULT_SETTINGS: Settings = {
     imageRound: true,
   },
   showTarget: true,
-  mainTitle: 'STOPIA TIME CHALLENGE',
-  subTitle: 'STOP AT THE EXACT MOMENT',
+  mainTitle: lang === 'en' ? 'STOPIA TIME CHALLENGE' : '스토피아 타임 챌린지',
+  subTitle: lang === 'en' ? 'STOP AT THE EXACT MOMENT' : '정확한 순간에 멈춰라',
   successText: 'MISSION SUCCESS',
   failText: 'MISSION FAILED',
   resultStyle: {

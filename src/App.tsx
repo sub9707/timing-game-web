@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent, type Pointer
 import type { InsertKind } from './components/editor/EditorMenu';
 import { StageEditor, type EditView, type Zoom } from './components/editor/StageEditor';
 import { SettingsPanel } from './components/panel/SettingsPanel';
-import { AdRail, ConsentBanner, useAdsVisible } from './components/stage/AdRail';
+import { adsConfigured, AdRail, ConsentBanner, useAdsVisible, useConsent } from './components/stage/AdRail';
 import type { TextEditProps } from './components/stage/EditableText';
 import { Stage, type StageView } from './components/stage/Stage';
 import { ChevronDownIcon, ExpandIcon, GearIcon, InfoIcon, LayoutIcon, LockIcon, ShrinkIcon, TrophyIcon } from './components/ui/Icons';
@@ -76,6 +76,9 @@ export default function App() {
   const [dockHidden, setDockHidden] = useLocalState('timer-game:dock-hidden', false);
   const [hideCursor, setHideCursor] = useLocalState('timer-game:hide-cursor', true);
   const [boardOpen, setBoardOpen] = useState(false);
+  /** 처음 온 사람에게 설정 버튼 안내 (한 번 열거나 닫으면 다시 안 띄움) */
+  const [guideSeen, setGuideSeen] = useLocalState('timer-game:guide-settings', false);
+  const consent = useConsent();
   /** 화면 직접 편집 (설정 패널이 서식 창 역할) */
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<EditId[]>([]);
@@ -193,6 +196,12 @@ export default function App() {
     setSettingsOpen(true);
   };
   const openSettings = () => (lock.locked ? setPinFor('settings') : doOpenSettings());
+
+  useEffect(() => {
+    if (settingsOpen) setGuideSeen(true);
+  }, [settingsOpen, setGuideSeen]);
+  // 쿠키 동의 안내와 겹치지 않게 그 뒤에
+  const showGuide = !guideSeen && !lock.locked && !dockHidden && (!adsConfigured || !!consent);
 
   /* ───── 화면 편집 ───── */
 
@@ -426,7 +435,7 @@ export default function App() {
           </>
         )}
 
-        <nav className={`dock ${dockHidden ? 'is-hidden' : ''}`}>
+        <nav className={`dock ${dockHidden ? 'is-hidden' : ''} ${showGuide ? 'has-guide' : ''}`}>
           <div className="dock-items" inert={dockHidden}>
             <button
               className="dock-btn"
@@ -480,9 +489,26 @@ export default function App() {
                 <LayoutIcon />
               </button>
             )}
-            <button className="dock-btn" onClick={openSettings} aria-label={tr('설정')} title={lock.locked ? tr('잠김 — PIN 필요') : tr('설정')} tabIndex={-1}>
-              {lock.locked ? <LockIcon /> : <GearIcon />}
-            </button>
+            <span className="dock-anchor">
+              <button
+                className={`dock-btn ${showGuide ? 'is-guide' : ''}`}
+                onClick={openSettings}
+                aria-label={tr('설정')}
+                title={lock.locked ? tr('잠김 — PIN 필요') : tr('설정')}
+                tabIndex={-1}
+              >
+                {lock.locked ? <LockIcon /> : <GearIcon />}
+              </button>
+              {showGuide && (
+                <div className="dock-guide" role="status">
+                  <strong>{tr('나만의 게임으로 꾸며 보세요')}</strong>
+                  <span>{tr('디자인·문구·효과음·랭킹을 여기서 바꿀 수 있어요')}</span>
+                  <button className="dock-guide-close" onClick={() => setGuideSeen(true)} aria-label={tr('닫기')} tabIndex={-1}>
+                    ×
+                  </button>
+                </div>
+              )}
+            </span>
           </div>
           <button
             className="dock-toggle"

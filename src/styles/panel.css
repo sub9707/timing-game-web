@@ -3338,7 +3338,7 @@
   position: fixed;
   z-index: 40;
   left: 50%;
-  bottom: 16px;
+  bottom: 80px; /* 가운데 아래 메뉴 위 */
   translate: -50% 0;
   width: min(560px, calc(100vw - 32px));
   display: flex;
@@ -3419,13 +3419,7 @@
 
 /* ───── 휴대폰 · 태블릿 ───── */
 @media (max-width: 700px) {
-  /* 키 안내가 오른쪽 아래 메뉴와 겹치지 않게 위로 */
-  .key-hint {
-    bottom: 76px;
-  }
-
   .dock {
-    right: 10px;
     bottom: 12px;
     gap: 6px;
   }
@@ -3464,7 +3458,7 @@
   }
 
   .consent {
-    bottom: 70px;
+    bottom: 68px;
   }
 }
 

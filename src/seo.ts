@@ -20,9 +20,9 @@ export const SEO: Record<'ko' | 'en', SeoText> = {
   ko: {
     lang: 'ko',
     locale: 'ko_KR',
-    title: '스토피아 Stopia — 나만의 시간 맞추기 게임 | 10초 맞추기 타이머 챌린지',
+    title: '스토피아 Stopia — 나만의 시간 맞추기 게임 | 타이머 챌린지',
     description:
-      '직접 커스텀할 수 있는 나만의 시간 맞추기 게임, 스토피아. 타이머를 정확히 10초·15초에 멈춰 보세요. 디자인·문구·효과음·랭킹을 마음대로 꾸며 행사·방송·수업·파티에서 설치 없이 무료로 바로 쓸 수 있어요.',
+      '직접 커스텀할 수 있는 나만의 시간 맞추기 게임, 스토피아. 타이머를 정확한 시간에 멈춰 보세요. 디자인·문구·효과음·랭킹을 마음대로 꾸며 행사·방송·수업·파티에서 설치 없이 무료로 바로 쓸 수 있어요.',
     keywords:
       '시간 맞추기 게임, 10초 맞추기, 10초 게임, 타이머 게임, 타이머 멈추기, 초시계 게임, 스톱워치 게임, 타이밍 게임, 행사 게임, 레크리에이션 게임, 방송 게임, 스토피아, Stopia',
     ogTitle: '스토피아 Stopia — 나만의 시간 맞추기 게임',
@@ -44,17 +44,17 @@ export const SEO: Record<'ko' | 'en', SeoText> = {
   en: {
     lang: 'en',
     locale: 'en_US',
-    title: 'Stopia — Make Your Own Stop the Timer Game | 10 Second Challenge',
+    title: 'Stopia — Your Own Stop the Timer Game | Timer Challenge',
     description:
-      'Stopia is a free, fully customizable stop-the-timer game. Try to stop the clock at exactly 10 seconds, then design your own challenge with themes, text, sound effects and leaderboards for events, streams, classrooms and parties. No install — it runs in your browser.',
+      'Stopia is your own stop-the-timer game that you can fully customize. Try to stop the timer at exactly the right time. Design the screen, text, sound effects and leaderboards your way, and use it free at events, on stream, in class or at parties — no install needed.',
     keywords:
       'stop the timer game, 10 second challenge, stop at 10 seconds, timer challenge, stopwatch game, timing game, reaction time game, party game, event game, classroom game, OBS timer overlay, Stopia',
-    ogTitle: 'Stopia — Make Your Own Stop the Timer Game',
-    ogDescription: 'Stop the clock at exactly the right moment! A free timing game you can fully customize — themes, text, sounds and leaderboards.',
+    ogTitle: 'Stopia — Your Own Stop the Timer Game',
+    ogDescription: 'Stop the timer exactly on time! A free timing game where you customize everything — design, text, sound effects and leaderboards.',
     imageAlt: 'Stopia logo',
     heading: 'Stopia — your own fully customizable stop-the-timer game',
     intro:
-      'Stop the running timer exactly on target (like 10.00 seconds). Land within the tolerance and you win! Design every part of the screen — text, sounds and leaderboards — and use it at events, on stream, in class or at parties.',
+      'Stop the running timer right on the target time (like 10 seconds). Land within the tolerance and you win! Make everything yourself — from the screen design to text, sound effects and leaderboards — and use it at events, on stream, in class or at parties.',
     features: [
       'Target time, tolerance and strict judging',
       'Blind mode that hides the clock, with a dramatic reveal',

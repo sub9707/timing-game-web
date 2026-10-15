@@ -618,4 +618,6 @@ export const EN: Record<string, string> = {
   '새 문서를 만들었어요': 'Created a new document',
   '백업 {0}': 'Backup {0}',
   '{0} 백업으로 되돌렸어요': 'Restored the backup from {0}',
+  '나만의 게임으로 꾸며 보세요': 'Make it your own game',
+  '디자인·문구·효과음·랭킹을 여기서 바꿀 수 있어요': 'Change the design, text, sounds and leaderboard here',
 };
