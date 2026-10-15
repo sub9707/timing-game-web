@@ -97,7 +97,7 @@
 }
 
 .theme-simple .frame {
-  padding-inline: clamp(8px, 2vw, 32px);
+  padding-inline: clamp(8px, 2.2cqw, 32px);
 }
 
 .theme-simple .frame.is-success::after {
@@ -247,7 +247,7 @@
 
 .theme-arcade .sub-title {
   font-family: 'Press Start 2P', 'Pretendard Variable', monospace;
-  font-size: calc(clamp(9px, 0.95vw, 15px) * var(--sub-scale));
+  font-size: calc(clamp(9px, 1.05cqw, 15px) * var(--sub-scale));
   letter-spacing: 0.18em;
   text-indent: 0.18em;
   line-height: 1.6;
@@ -324,4 +324,352 @@
   background:
     radial-gradient(ellipse 40% 60% at 18% -10%, rgba(255, 255, 255, 0.13), transparent 70%),
     radial-gradient(ellipse 40% 60% at 82% -10%, rgba(255, 255, 255, 0.13), transparent 70%);
+}
+
+/* =========================================================
+   AURORA — 오로라 글래스
+   ========================================================= */
+.theme-aurora {
+  --fail: #ff7a9a;
+}
+
+.theme-aurora .main-title {
+  letter-spacing: -0.03em;
+}
+
+.theme-aurora .sub-title {
+  color: var(--accent);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  opacity: 0.8;
+}
+
+.theme-aurora .frame::before {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    0 30px 90px -30px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.theme-aurora .bg-fx {
+  inset: -30%;
+  background:
+    radial-gradient(40% 20% at 30% 32%, rgba(124, 245, 200, 0.4), transparent 70%),
+    radial-gradient(36% 18% at 70% 24%, rgba(185, 140, 255, 0.34), transparent 70%),
+    radial-gradient(30% 16% at 50% 46%, rgba(122, 168, 255, 0.26), transparent 70%);
+  filter: blur(40px);
+  animation: aurora 18s ease-in-out infinite alternate;
+}
+
+.theme-aurora .bg-image .bg-fx {
+  opacity: 0.5;
+}
+
+@keyframes aurora {
+  from {
+    transform: translateX(-5%) skewX(-8deg);
+  }
+  to {
+    transform: translateX(5%) skewX(8deg) scaleY(1.2);
+  }
+}
+
+/* =========================================================
+   SUNSET — 신스웨이브 레트로 석양
+   ========================================================= */
+.theme-sunset {
+  --fail: #6ee7ff;
+}
+
+.theme-sunset .main-title {
+  letter-spacing: 0.02em;
+}
+
+.theme-sunset .sub-title {
+  color: #ffd36e;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  opacity: 0.95;
+  text-shadow: 0 0 0.6em rgba(255, 140, 60, 0.8);
+}
+
+.theme-sunset .frame::before {
+  background: linear-gradient(180deg, rgba(26, 0, 40, 0.82), rgba(50, 0, 50, 0.72));
+  box-shadow: 0 0 60px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* 줄무늬 해 */
+.theme-sunset .bg:not(.bg-image) .bg-fx::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 24%;
+  width: 34vmin;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: linear-gradient(#ffe66d, #ff8a5c 55%, #ff2e88);
+  mask-image: linear-gradient(#000 52%, transparent 52% 56%, #000 56% 64%, transparent 64% 69%, #000 69% 77%, transparent 77% 84%, #000 84% 90%, transparent 90%);
+  filter: drop-shadow(0 0 40px rgba(255, 90, 120, 0.6));
+  opacity: 0.85;
+}
+
+/* 원근 격자 바닥 */
+.theme-sunset .bg:not(.bg-image) .bg-fx::after {
+  content: '';
+  position: absolute;
+  inset: auto -50% 0 -50%;
+  height: 26%;
+  background-color: rgba(18, 0, 36, 0.85);
+  background-image:
+    linear-gradient(rgba(255, 46, 136, 0.55) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 46, 136, 0.55) 2px, transparent 2px);
+  background-size: 70px 70px;
+  transform: perspective(300px) rotateX(58deg);
+  transform-origin: bottom;
+  mask-image: linear-gradient(to top, #000 40%, transparent);
+  animation: grid-run 1.6s linear infinite;
+}
+
+@keyframes grid-run {
+  to {
+    background-position: 0 70px;
+  }
+}
+
+/* =========================================================
+   POP — 코믹 팝아트
+   ========================================================= */
+.theme-pop {
+  --fail: #3d5afe;
+}
+
+.theme-pop .main-title {
+  letter-spacing: -0.01em;
+  text-shadow: 0.06em 0.06em 0 var(--accent);
+}
+
+.theme-pop.title-grad .main-title {
+  text-shadow: none;
+}
+
+.theme-pop .sub-title {
+  padding: 0.5em 1.3em;
+  background: #111;
+  color: #ffd23f;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  opacity: 1;
+  transform: rotate(-2deg);
+}
+
+.theme-pop .frame::before {
+  background: #fff;
+  box-shadow: 10px 10px 0 #111;
+}
+
+.theme-pop .frame.is-success {
+  animation: pop-hit 0.55s cubic-bezier(0.3, 1.8, 0.4, 1);
+}
+
+.theme-pop .result-label:not(.is-grad) {
+  text-shadow: 0.05em 0.05em 0 #111;
+}
+
+.theme-pop .key-hint kbd {
+  background: #111;
+  color: #ffd23f;
+  border-color: #111;
+}
+
+/* 하프톤 망점 */
+.theme-pop .bg-fx {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.16) 24%, transparent 26%);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(ellipse at center, transparent 35%, #000 90%);
+}
+
+@keyframes pop-hit {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  40% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+/* =========================================================
+   SAKURA — 벚꽃 파스텔
+   ========================================================= */
+.theme-sakura {
+  --fail: #8a7a9e;
+}
+
+.theme-sakura .main-title {
+  letter-spacing: -0.01em;
+}
+
+.theme-sakura .sub-title {
+  color: var(--accent);
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  opacity: 0.85;
+}
+
+.theme-sakura .frame::before {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 24px 60px -20px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* 흩날리는 꽃잎 — 크기·속도가 다른 세 겹으로 격자 느낌 없이 */
+.theme-sakura .bg-fx,
+.theme-sakura .bg-fx::before,
+.theme-sakura .bg-fx::after {
+  --petal: rgba(255, 143, 177, 0.7);
+  background-image:
+    radial-gradient(ellipse 7px 4px at 23% 17%, var(--petal) 95%, transparent),
+    radial-gradient(ellipse 4px 6px at 71% 63%, var(--petal) 95%, transparent);
+  animation: petals 26s ease-in-out infinite alternate;
+}
+
+.theme-sakura .bg-fx {
+  inset: -15%;
+  background-size: 331px 373px;
+}
+
+.theme-sakura .bg-fx::before,
+.theme-sakura .bg-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.theme-sakura .bg-fx::before {
+  --petal: rgba(255, 182, 203, 0.85);
+  background-size: 467px 419px;
+  background-position: 120px 60px;
+  animation-duration: 34s;
+  filter: blur(0.6px);
+}
+
+.theme-sakura .bg-fx::after {
+  --petal: rgba(255, 120, 165, 0.5);
+  background-size: 239px 281px;
+  background-position: 70px 190px;
+  animation-duration: 19s;
+  scale: 1.6;
+  filter: blur(1px);
+}
+
+@keyframes petals {
+  from {
+    translate: 0 -12%;
+    rotate: 0deg;
+  }
+  to {
+    translate: 6% 12%;
+    rotate: 4deg;
+  }
+}
+
+/* =========================================================
+   OCEAN — 심해 빛줄기
+   ========================================================= */
+.theme-ocean {
+  --fail: #ff8a80;
+}
+
+.theme-ocean .sub-title {
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  opacity: 0.7;
+}
+
+.theme-ocean .frame::before {
+  background: linear-gradient(180deg, rgba(10, 60, 90, 0.35), rgba(2, 15, 30, 0.55));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgba(160, 240, 255, 0.18),
+    0 30px 80px -30px rgba(0, 0, 0, 0.7);
+}
+
+/* 위에서 내려오는 빛줄기 */
+.theme-ocean .bg-fx {
+  inset: -10%;
+  background: repeating-linear-gradient(100deg, transparent 0 6%, rgba(160, 240, 255, 0.07) 7% 9%, transparent 10% 16%);
+  mask-image: linear-gradient(to bottom, #000, transparent 75%);
+  animation: rays 12s ease-in-out infinite alternate;
+}
+
+/* 떠오르는 기포 */
+.theme-ocean .bg:not(.bg-image) .bg-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 30% 40%, rgba(200, 245, 255, 0.35) 2px, transparent 3px),
+    radial-gradient(circle at 75% 70%, rgba(200, 245, 255, 0.25) 1.5px, transparent 2.5px);
+  background-size:
+    260px 300px,
+    180px 220px;
+  animation: bubbles 16s linear infinite;
+}
+
+@keyframes rays {
+  to {
+    transform: translateX(5%) skewX(-4deg);
+    opacity: 0.6;
+  }
+}
+
+@keyframes bubbles {
+  to {
+    background-position:
+      0 -600px,
+      0 -440px;
+  }
+}
+
+/* =========================================================
+   NOIR — 흑백 에디토리얼
+   ========================================================= */
+.theme-noir {
+  --fail: #8b8b8b;
+}
+
+.theme-noir .main-title {
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+}
+
+.theme-noir .sub-title {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  opacity: 1;
+}
+
+.theme-noir .frame {
+  padding-inline: clamp(12px, 3.3cqw, 48px);
+}
+
+.theme-noir .result-label {
+  letter-spacing: 0.1em;
+}
+
+/* 비네팅 + 필름 스캔라인 */
+.theme-noir .bg-fx {
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.75) 100%);
 }

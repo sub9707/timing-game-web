@@ -6,7 +6,7 @@
   font-family: var(--font-title);
   position: relative;
   z-index: 2;
-  font-size: calc(clamp(18px, 2.4vw, 40px) * var(--title-adj) * var(--prompt-scale, 1));
+  font-size: calc(clamp(18px, 2.6cqw, 40px) * var(--title-adj));
   font-weight: var(--title-weight);
   letter-spacing: 0.06em;
   text-align: center;
@@ -20,12 +20,12 @@
 /* 긴장: 점 세 개가 시간에 맞춰 하나씩 켜짐 */
 .reveal-suspense {
   display: flex;
-  gap: clamp(14px, 2vw, 28px);
+  gap: clamp(14px, 2.2cqw, 28px);
   padding-top: 0.4em;
 }
 
 .reveal-suspense span {
-  width: clamp(12px, 1.4vw, 22px);
+  width: clamp(12px, 1.5cqw, 22px);
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--accent);
