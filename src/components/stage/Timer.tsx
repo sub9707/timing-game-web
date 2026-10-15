@@ -1,27 +1,30 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
-import { blindGroup } from '../blind';
-import { formatTime } from '../time';
-import type { BlindSetting, Phase } from '../types';
+import { blindGroup } from '../../game/blind';
+import { formatTime } from '../../game/time';
+import type { BlindSetting, Phase, TimeFormat } from '../../types';
+import { tr } from '../../i18n';
 
 interface DigitsProps {
   ms: number;
   /** 가림 문자 (숫자 칸마다 다르게 하려면 배열) */
   mask?: string | string[];
   className?: string;
+  format?: TimeFormat;
 }
 
 /** 숫자마다 고정 폭 칸을 줘서 폰트와 상관없이 흔들림 없이 표시 */
-export function Digits({ ms, mask, className = '' }: DigitsProps) {
+export function Digits({ ms, mask, className = '', format = 'mm:ss:cc' }: DigitsProps) {
   let n = 0;
+  const text = formatTime(ms, format);
   return (
-    <div className={`digits ${mask !== undefined ? 'is-masked' : ''} ${className}`} aria-label={mask !== undefined ? undefined : formatTime(ms)}>
-      {formatTime(ms)
+    <div className={`digits ${mask !== undefined ? 'is-masked' : ''} ${className}`} aria-label={mask !== undefined ? undefined : text}>
+      {text
         .split('')
         .map((c, i) => {
-          if (c === ':') {
+          if (c === ':' || c === '.') {
             return (
-              <span key={i} className="colon">
-                :
+              <span key={i} className={`colon ${c === '.' ? 'is-dot' : ''}`}>
+                {c}
               </span>
             );
           }
@@ -49,6 +52,7 @@ interface LiveTimerProps {
   blindImageUrl: string | null;
   /** 설정 미리보기: 상태와 무관하게 가림 연출 표시 */
   forceBlind?: boolean;
+  format?: TimeFormat;
 }
 
 /** 처음 잠깐 머뭇거리다 가속 → 목표에 천천히 안착 */
@@ -57,7 +61,7 @@ function settleEase(p: number) {
   return 1 - Math.pow(1 - t, 4);
 }
 
-export function LiveTimer({ phase, startAt, stoppedMs, fromMs, settleMs, blind, blindAfterMs, blindFx, blindImageUrl, forceBlind }: LiveTimerProps) {
+export function LiveTimer({ phase, startAt, stoppedMs, fromMs, settleMs, blind, blindAfterMs, blindFx, blindImageUrl, forceBlind, format = 'mm:ss:cc' }: LiveTimerProps) {
   const [elapsed, setElapsed] = useState(0);
 
   useLayoutEffect(() => {
@@ -86,20 +90,20 @@ export function LiveTimer({ phase, startAt, stoppedMs, fromMs, settleMs, blind, 
     return () => cancelAnimationFrame(raf);
   }, [phase, settleFrom, stoppedMs, settleMs]);
 
-  const ms = phase === 'idle' ? 0 : phase === 'running' ? elapsed : phase === 'settle' ? Math.round(settling / 10) * 10 : stoppedMs;
+  const ms = phase === 'idle' || phase === 'countdown' ? 0 : phase === 'running' ? elapsed : phase === 'settle' ? Math.round(settling / 10) * 10 : stoppedMs;
   const hidden = forceBlind || phase === 'confirm' || phase === 'reveal' || (phase === 'running' && blind && elapsed >= blindAfterMs);
-  if (hidden) return <BlindView fx={blindFx} imageUrl={blindImageUrl} />;
+  if (hidden) return <BlindView fx={blindFx} imageUrl={blindImageUrl} format={format} />;
 
   return (
     <div className={`live ${phase === 'settle' ? 'is-settling' : ''}`}>
-      <Digits ms={ms} className="live-digits" />
+      <Digits ms={ms} className="live-digits" format={format} />
     </div>
   );
 }
 
 /* ───────── 블라인드 연출 ───────── */
 
-const randomDigits = () => Array.from({ length: 6 }, () => String(Math.floor(Math.random() * 10)));
+const randomDigits = () => Array.from({ length: 8 }, () => String(Math.floor(Math.random() * 10)));
 
 /** 일정 간격으로 의미 없는 숫자를 굴림 (실제 시간과 무관) */
 function useScramble(on: boolean, speed: number) {
@@ -142,10 +146,11 @@ const RADAR_BLIPS: [number, number][] = [
 interface BlindViewProps {
   fx: BlindSetting;
   imageUrl: string | null;
+  format?: TimeFormat;
 }
 
 /** 진행 중 가려진 타이머. 설정 패널 미리보기에서도 그대로 사용 */
-export function BlindView({ fx, imageUrl }: BlindViewProps) {
+export function BlindView({ fx, imageUrl, format = 'mm:ss:cc' }: BlindViewProps) {
   const group = blindGroup(fx.style);
   const chars = Array.from(fx.text || ' ');
   const scramble = useScramble(fx.style === 'scramble', fx.speed);
@@ -164,9 +169,10 @@ export function BlindView({ fx, imageUrl }: BlindViewProps) {
   return (
     <>
       {fx.orbit && <span className="blind-orbit" style={vars} aria-hidden />}
-      <div className={`live is-blind fx-${fx.style}`} style={vars} aria-label="가려진 시간">
+      <div className={`live is-blind fx-${fx.style}`} style={vars} aria-label={tr('가려진 시간')}>
         <Digits
           ms={0}
+          format={format}
           mask={group !== 'digits' ? ' ' : fx.style === 'scramble' ? scramble : fx.maskChar}
           className={`live-digits ${group !== 'digits' ? 'is-veiled' : ''}`}
         />

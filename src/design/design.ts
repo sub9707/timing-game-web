@@ -1,16 +1,36 @@
 import type { CSSProperties } from 'react';
-import { FONTS } from './fonts';
-import type { DesignSetting, Fill } from './types';
+import { formatShape } from '../game/time';
+import { fontDef } from '../settings/fonts';
+import { firstColor, gradientCss } from './gradient';
+import type { DesignSetting, Fill, TextFx, TimeFormat } from '../types';
 
-export const fillGradient = (f: Fill) => `linear-gradient(${f.angle}deg, ${f.stops.join(', ')})`;
+export const fillGradient = (f: Fill) => gradientCss(f);
+/** 글로우처럼 한 색이 필요할 때 */
+export const fillColor = (f: Fill) => (f.mode === 'solid' ? f.color : firstColor(f));
+
+/** 글자 효과 → 인라인 스타일 (인라인이라 테마 기본 자간·그림자보다 우선) */
+export function textFxStyle(fx: TextFx | undefined): CSSProperties {
+  if (!fx) return {};
+  const out: CSSProperties = {};
+  if (fx.tracking !== null) out.letterSpacing = `${fx.tracking}em`;
+  if (fx.lineHeight !== null) out.lineHeight = fx.lineHeight;
+  if (fx.stroke > 0) {
+    out.WebkitTextStroke = `${fx.stroke}px ${fx.strokeColor}`;
+    out.paintOrder = 'stroke fill';
+  }
+  if (fx.shadow > 0 || fx.shadowOffset > 0) out.textShadow = `${fx.shadowOffset}px ${fx.shadowOffset}px ${fx.shadow}px ${fx.shadowColor}`;
+  return out;
+}
 
 /** 디자인 설정 → 무대에 거는 CSS 변수와 클래스 */
-export function designVars(d: DesignSetting) {
-  const tf = FONTS[d.titleFont];
-  const df = FONTS[d.digitFont];
-  // 숫자 6칸 + 콜론 2칸이 화면 폭의 약 58% 를 차지하도록 폰트별로 자동 계산
-  const totalEm = df.digitW * 6 + df.colonW * 2;
-  const borderGlowColor = d.borderFill.mode === 'solid' ? d.borderFill.color : d.borderFill.stops[0];
+export function designVars(d: DesignSetting, fmt: TimeFormat = 'mm:ss:cc') {
+  const tf = fontDef(d.titleFont);
+  const df = fontDef(d.digitFont);
+  // 숫자 칸 + 구분자 칸이 무대 폭(광고 제외)의 약 70% 를 차지하도록 폰트·형식별로 자동 계산
+  const shape = formatShape(fmt);
+  const totalEm = df.digitW * shape.digits + df.colonW * shape.seps;
+  const borderGlowColor = fillColor(d.borderFill);
+  const dfx = d.textFx?.digits;
 
   const style = {
     '--font-title': tf.family,
@@ -27,9 +47,12 @@ export function designVars(d: DesignSetting) {
     '--digit-style': d.digitItalic ? 'italic' : 'normal',
     '--digit-w': `${df.digitW}em`,
     '--colon-w': `${df.colonW}em`,
-    '--digit-size': `calc(min(${(58 / totalEm).toFixed(2)}vw, 26vh) * ${d.digitScale / 100})`,
+    '--digit-size': `calc(min(${(70 / totalEm).toFixed(2)}cqw, 32cqh) * ${d.digitScale / 100})`,
     '--digit-color': d.digitFill.color,
     '--digit-grad': fillGradient(d.digitFill),
+    // 숫자 외곽선·그림자 (숫자는 칸마다 고정 폭이라 자간은 없음)
+    '--digit-stroke': dfx && dfx.stroke > 0 ? `${dfx.stroke}px ${dfx.strokeColor}` : '0 transparent',
+    '--digit-shadow': dfx && (dfx.shadow > 0 || dfx.shadowOffset > 0) ? `${dfx.shadowOffset}px ${dfx.shadowOffset}px ${dfx.shadow}px ${dfx.shadowColor}` : 'none',
 
     '--radius': `${d.borderRadius}px`,
     '--frame-bg': d.frameBg / 100,
@@ -48,6 +71,7 @@ export function designVars(d: DesignSetting) {
     d.glowTitle > 0 && 'glow-title',
     d.glowDigits > 0 && 'glow-digits',
     d.glowBorder > 0 && 'glow-border',
+    !d.bgFx && 'no-bgfx',
   ]
     .filter(Boolean)
     .join(' ');
