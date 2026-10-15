@@ -69,6 +69,18 @@ export function newShapeItem(s: Settings, shape: ShapeKind): ShapeItem {
   };
 }
 
+/** 그림 파일 고르기 (취소하면 null) */
+export function pickImage(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => resolve(input.files?.[0] ?? null);
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
+
 /** 그림 파일 → 에셋 저장 후 그림 요소 */
 export async function newImageItem(s: Settings, file: Blob, name?: string): Promise<ImageItem | null> {
   const blob = await optimizeImage(file);

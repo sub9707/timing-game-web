@@ -1,59 +1,46 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { InsertKind } from './components/editor/EditorMenu';
 import { StageEditor, type EditView, type Zoom } from './components/editor/StageEditor';
 import { SettingsPanel } from './components/panel/SettingsPanel';
 import { AdRail, useAdsVisible } from './components/stage/AdRail';
 import type { TextEditProps } from './components/stage/EditableText';
-import { Stage, type StageView } from './components/stage/Stage';
-import { ChevronDownIcon, ExpandIcon, GearIcon, InfoIcon, LayoutIcon, LockIcon, ShrinkIcon, TrophyIcon } from './components/ui/Icons';
+import { Dock } from './components/stage/Dock';
+import { Stage } from './components/stage/Stage';
 import { InfoCard } from './components/ui/InfoCard';
 import { PinDialog } from './components/ui/PinDialog';
 import { SavedBadge } from './components/ui/SavedBadge';
-import { addItems, newImageItem, newShapeItem, newTextItem } from './design/items';
+import { addItems, newImageItem, newShapeItem, newTextItem, pickImage } from './design/items';
 import { getBox, itemIdOf, itemOf, keyHintStage, PREVIEW_FOR, setBox, TEXT_FIELD, uid } from './design/layout';
-import { RESERVED_KEYS } from './game/keys';
 import { ranking, useRecords } from './game/records';
 import { useGame, type PressKind } from './game/useGame';
 import { usePanelGesture } from './hooks/panelGesture';
+import { useFileDrop, useUnsavedWarning } from './hooks/useFileDrop';
 import { useFullscreen } from './hooks/useFullscreen';
+import { useGameKeys } from './hooks/useGameKeys';
 import { useGamepad } from './hooks/useGamepad';
 import { useHistory } from './hooks/useHistory';
 import { useIdleCursor } from './hooks/useIdleCursor';
 import { useLocalState } from './hooks/useLocalState';
 import { useLock } from './hooks/useLock';
+import { useStageView } from './hooks/useStageView';
 import { openOutputWindow, usePublisher } from './live/sync';
 import { useCustomFonts } from './settings/fonts';
 import { useSettings } from './settings/settings';
 import { onAssetChange, onAssetError, putAsset, useStoredImage } from './storage/assets';
-import { isDocFile, useDocument } from './storage/doc';
-import type { EditId, FontId, GameResult, Phase, ShapeKind, StagePreview } from './types';
-import { lang, setLang, tr } from './i18n';
+import { useDocument } from './storage/doc';
+import type { EditId, FontId, ShapeKind, StagePreview } from './types';
+import { tr } from './i18n';
 
 const DEFAULT_VIEW: EditView = { grid: false, snapGrid: false, guides: true, rulers: false, showHidden: false, units: 'pct' };
 const NO_ZOOM: Zoom = { z: 1, x: 0, y: 0 };
-
-/** 그림 파일 고르기 */
-function pickImage(): Promise<File | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => resolve(input.files?.[0] ?? null);
-    input.addEventListener('cancel', () => resolve(null));
-    input.click();
-  });
-}
 
 export default function App() {
   const [settings, setSettings, savedAt] = useSettings();
   /** 실행 취소·다시 실행 — 설정·에셋 변경을 자동 기록 */
   const history = useHistory(settings, setSettings);
-  const historyRef = useRef(history);
-  historyRef.current = history;
   /** 저장 파일(.stopia) — 파일을 불러오면 그 전 실행 취소 기록은 지움 (파워포인트와 같음) */
   const doc = useDocument(settings, setSettings, history.reset);
-  const docRef = useRef(doc);
-  docRef.current = doc;
+  useUnsavedWarning(doc);
   useCustomFonts(settings.customFonts);
   const { records, player } = useRecords();
   const lock = useLock();
@@ -90,7 +77,6 @@ export default function App() {
   const panelGesture = usePanelGesture();
   /** 화면 위에서 글자를 직접 고치는 중인 요소 */
   const [textEditing, setTextEditing] = useState<EditId | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const anyFullscreen = fs.any;
   const showAds = useAdsVisible() && !fs.app;
   useIdleCursor(hideCursor && anyFullscreen);
@@ -100,82 +86,31 @@ export default function App() {
   const game = useGame(settings, { record: !settingsOpen });
   const gameRef = useRef(game);
   gameRef.current = game;
-  const state = useRef({ overlayOpen, editing, boardOpen, settings });
-  state.current = { overlayOpen, editing, boardOpen, settings };
-
-  /** 진행 중이면 파일·편집 단축키는 막음 */
-  const isPlaying = () => {
-    const ph = gameRef.current.phase;
-    return !state.current.overlayOpen && ph !== 'idle' && ph !== 'result';
-  };
+  const overlayRef = useRef(overlayOpen);
+  overlayRef.current = overlayOpen;
 
   const press = useCallback((kind: PressKind, t = performance.now()) => {
-    if (state.current.overlayOpen) return;
+    if (overlayRef.current) return;
     gameRef.current.press(t, kind);
   }, []);
 
-  /* ───── 키보드: 매핑된 키 외 전부 차단 ───── */
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const mod = e.ctrlKey || e.metaKey;
-      // 실행 취소 Ctrl+Z · 다시 실행 Ctrl+Y / Ctrl+Shift+Z (화면 위 글자 편집 중엔 글자 단위로)
-      if (e.type === 'keydown' && mod && (e.code === 'KeyZ' || e.code === 'KeyY')) {
-        if ((e.target as HTMLElement | null)?.isContentEditable) return;
-        e.preventDefault();
-        e.stopPropagation();
-        if (isPlaying() || lock.locked) return;
-        const h = historyRef.current;
-        if (e.code === 'KeyY' || e.shiftKey) h.redo();
-        else h.undo();
-        return;
-      }
-      // 파일: Ctrl+S 저장 · Ctrl+Shift+S 다른 이름으로 · Ctrl+O 불러오기
-      if (e.type === 'keydown' && mod && (e.code === 'KeyS' || e.code === 'KeyO')) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isPlaying() || e.repeat || lock.locked) return;
-        const d = docRef.current;
-        if (e.code === 'KeyS') void (e.shiftKey ? d.saveAs() : d.save());
-        else if (!(d.dirty && d.name) || confirm(tr('저장하지 않은 변경 내용이 있어요. 버리고 불러올까요?'))) void d.open();
-        return;
-      }
-      if (state.current.overlayOpen) {
-        // 키 매핑 입력 중에는 ESC 를 캡처 취소로 사용
-        const capturing = (e.target as HTMLElement | null)?.closest?.('[data-key-capture]');
-        // 화면 편집 중 ESC 는 편집기가 처리 (선택 해제 → 편집 끝)
-        if (e.type === 'keydown' && e.key === 'Escape' && !capturing && !state.current.editing) {
-          setSettingsOpen(false);
-          setInfoOpen(false);
-          setPinFor(null);
-        }
-        return; // 설정·정보 화면에선 입력 허용
-      }
-      if (RESERVED_KEYS.includes(e.code)) return; // 전체화면 전환만 허용
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.type !== 'keydown' || e.repeat) return;
-      const { actionKeys, resetKeys, cheatKeys } = state.current.settings;
-      const kind = resetKeys.includes(e.code) ? 'reset' : actionKeys.includes(e.code) ? 'action' : cheatKeys.includes(e.code) ? 'cheat' : null;
-      // 랭킹 화면: L 로 열고 닫기 (대기·결과에서) · ESC 로 닫기
-      if (!kind && e.code === 'KeyL' && !isPlaying()) return setBoardOpen((o) => !o);
-      if (!kind && e.key === 'Escape') return setBoardOpen(false);
-      if (!kind) return;
-      if (state.current.boardOpen) setBoardOpen(false);
-      const now = performance.now();
-      // keydown 발생 시각을 그대로 사용해 렌더 지연 영향을 없앰
-      press(kind, e.timeStamp > 0 && Math.abs(now - e.timeStamp) < 1000 ? e.timeStamp : now);
-    };
-    const opts = { capture: true };
-    window.addEventListener('keydown', onKey, opts);
-    window.addEventListener('keyup', onKey, opts);
-    window.addEventListener('keypress', onKey, opts);
-    return () => {
-      window.removeEventListener('keydown', onKey, opts);
-      window.removeEventListener('keyup', onKey, opts);
-      window.removeEventListener('keypress', onKey, opts);
-    };
-  }, [press, lock.locked]);
+  useGameKeys({
+    settings,
+    overlayOpen,
+    editing,
+    boardOpen,
+    locked: lock.locked,
+    playing: !overlayOpen && game.phase !== 'idle' && game.phase !== 'result',
+    history,
+    doc,
+    press,
+    closeOverlays: () => {
+      setSettingsOpen(false);
+      setInfoOpen(false);
+      setPinFor(null);
+    },
+    setBoardOpen,
+  });
 
   // 게임패드 · 화면 탭
   useGamepad(settings.input.gamepad && !overlayOpen, (kind, t) => press(kind, t));
@@ -278,30 +213,7 @@ export default function App() {
 
   // 설정 중 미리보기는 실제 게임 상태 대신 화면에만 반영
   const pv = settingsOpen ? preview : null;
-  const previewStart = useRef(0);
-  useEffect(() => {
-    if (pv === 'running') previewStart.current = performance.now() - 7420;
-  }, [pv]);
-  const viewPhase: Phase = pv === 'confirm' ? 'confirm' : pv === 'result' || pv === 'result-fail' ? 'result' : pv === 'running' ? 'running' : game.phase;
-  const viewResult: GameResult | null =
-    pv === 'result'
-      ? { elapsedMs: game.targetMs, diffMs: 0, success: true }
-      : pv === 'result-fail'
-        ? { elapsedMs: game.targetMs + 1230, diffMs: 1230, success: false }
-        : game.result;
-  const view: StageView = {
-    phase: viewPhase,
-    result: viewResult,
-    startAt: pv === 'running' ? previewStart.current || performance.now() - 7420 : game.startAt,
-    countdownAt: game.countdownAt,
-    round: game.round,
-    dramaticHit: game.dramaticHit && !pv,
-    targetMs: game.targetMs,
-    realPhase: pv ? 'idle' : game.phase,
-    forceBlind: pv === 'blind',
-  };
-  const viewPhaseRef = useRef(viewPhase);
-  viewPhaseRef.current = viewPhase;
+  const { view, phaseRef: viewPhaseRef } = useStageView(game, pv);
   const board = boardOpen ? ranking(records, settings.leaderboard) : null;
 
   /** 텍스트 요소의 제자리 편집 연결 (편집 모드에서만 켜짐) */
@@ -345,64 +257,13 @@ export default function App() {
     (kind) => press(kind),
   );
 
-  /* ───── 파일 끌어다 놓기 · 닫기 경고 · 투명 배경 ───── */
+  /* ───── 파일 끌어다 놓기 · 투명 배경 ───── */
 
-  useEffect(() => {
-    const over = (e: DragEvent) => {
-      if (!e.dataTransfer?.types.includes('Files')) return;
-      e.preventDefault();
-      setDragOver(true);
-    };
-    const leave = (e: DragEvent) => {
-      if (!e.relatedTarget) setDragOver(false);
-    };
-    const drop = (e: DragEvent) => {
-      if (!e.dataTransfer?.files.length) return;
-      e.preventDefault();
-      setDragOver(false);
-      for (const f of e.dataTransfer.files) {
-        if (isDocFile(f)) {
-          const d = docRef.current;
-          if (!(d.dirty && d.name) || confirm(tr('저장하지 않은 변경 내용이 있어요. 버리고 불러올까요?'))) void d.openFile(f);
-          return;
-        }
-        // 그림은 화면 편집에 삽입 (놓은 자리에)
-        if (f.type.startsWith('image/') && !lock.locked) {
-          const u = document.querySelector('.canvas')?.getBoundingClientRect();
-          const at = u ? { x: ((e.clientX - (u.left + u.width / 2)) / u.width) * 100, y: ((e.clientY - (u.top + u.height / 2)) / u.height) * 100 } : undefined;
-          void insertRef.current('image', at, f);
-        }
-      }
-    };
-    window.addEventListener('dragover', over);
-    window.addEventListener('dragleave', leave);
-    window.addEventListener('drop', drop);
-    return () => {
-      window.removeEventListener('dragover', over);
-      window.removeEventListener('dragleave', leave);
-      window.removeEventListener('drop', drop);
-    };
-  }, [lock.locked]);
-  const insertRef = useRef(insert);
-  insertRef.current = insert;
-
-  useEffect(() => {
-    const warn = (e: BeforeUnloadEvent) => {
-      const d = docRef.current;
-      if (d.name && d.dirty) e.preventDefault();
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, []);
+  const dragOver = useFileDrop({ doc, locked: lock.locked, insertImage: (f, at) => void insert('image', at, f) });
 
   useEffect(() => {
     document.documentElement.classList.toggle('is-transparent', settings.bg.mode === 'transparent');
   }, [settings.bg.mode]);
-
-  const toggleFullscreen = (e: MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.blur();
-    fs.toggle();
-  };
 
   /* ───── render ───── */
 
@@ -433,95 +294,21 @@ export default function App() {
           </>
         )}
 
-        <nav className={`dock ${dockHidden ? 'is-hidden' : ''} ${showGuide ? 'has-guide' : ''}`}>
-          <div className="dock-items" inert={dockHidden}>
-            <button
-              className="dock-btn"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                setInfoOpen(true);
-              }}
-              aria-label={tr('정보')}
-              tabIndex={-1}
-            >
-              <InfoIcon />
-            </button>
-            <button
-              className={`dock-btn ${boardOpen ? 'is-on' : ''}`}
-              onClick={(e) => {
-                e.currentTarget.blur();
-                setBoardOpen((o) => !o);
-              }}
-              aria-label={tr('랭킹')}
-              title={tr('랭킹 화면 (L)')}
-              tabIndex={-1}
-            >
-              <TrophyIcon />
-            </button>
-            {/* 언어 바꾸기 (새로고침) — 잠금 중엔 관객이 못 누르게 숨김 */}
-            {!lock.locked && (
-              <button
-                className="dock-btn dock-lang"
-                onClick={() => setLang(lang === 'ko' ? 'en' : 'ko')}
-                aria-label={lang === 'ko' ? 'English' : '한국어'}
-                title={lang === 'ko' ? 'English' : '한국어'}
-                tabIndex={-1}
-              >
-                {lang === 'ko' ? 'EN' : '한'}
-              </button>
-            )}
-            <button className="dock-btn" onClick={toggleFullscreen} aria-label={tr('전체화면')} tabIndex={-1}>
-              {fs.app ? <ShrinkIcon /> : <ExpandIcon />}
-            </button>
-            {!anyFullscreen && (
-              <button
-                className="dock-btn"
-                onClick={(e) => {
-                  e.currentTarget.blur();
-                  startEditing();
-                }}
-                aria-label={tr('화면 편집')}
-                title={tr('화면 편집 — 요소를 직접 옮기고 크기 조절')}
-                tabIndex={-1}
-              >
-                <LayoutIcon />
-              </button>
-            )}
-            <span className="dock-anchor">
-              <button
-                className={`dock-btn ${showGuide ? 'is-guide' : ''}`}
-                onClick={openSettings}
-                aria-label={tr('설정')}
-                title={lock.locked ? tr('잠김 — PIN 필요') : tr('설정')}
-                tabIndex={-1}
-              >
-                {lock.locked ? <LockIcon /> : <GearIcon />}
-              </button>
-              {showGuide && (
-                <div className="dock-guide" role="status">
-                  <strong>{tr('나만의 게임으로 꾸며 보세요')}</strong>
-                  <span>{tr('디자인·문구·효과음·랭킹을 여기서 바꿀 수 있어요')}</span>
-                  <button className="dock-guide-close" onClick={() => setGuideSeen(true)} aria-label={tr('닫기')} tabIndex={-1}>
-                    ×
-                  </button>
-                </div>
-              )}
-            </span>
-          </div>
-          <button
-            className="dock-toggle"
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setDockHidden((h) => !h);
-            }}
-            aria-label={dockHidden ? tr('메뉴 보이기') : tr('메뉴 숨기기')}
-            aria-expanded={!dockHidden}
-            title={dockHidden ? tr('메뉴 보이기') : tr('메뉴 숨기기')}
-            tabIndex={-1}
-          >
-            <ChevronDownIcon />
-          </button>
-        </nav>
+        <Dock
+          hidden={dockHidden}
+          onToggleHidden={() => setDockHidden((h) => !h)}
+          locked={lock.locked}
+          boardOpen={boardOpen}
+          fullscreen={fs.app}
+          canEdit={!anyFullscreen}
+          guide={showGuide}
+          onCloseGuide={() => setGuideSeen(true)}
+          onInfo={() => setInfoOpen(true)}
+          onBoard={() => setBoardOpen((o) => !o)}
+          onFullscreen={fs.toggle}
+          onEdit={() => startEditing()}
+          onSettings={openSettings}
+        />
       </Stage>
 
       {/* 패널·편집기·알림은 .app 바깥 — 디자인 변수(.app 에 걸림)가 바뀔 때 패널 전체 스타일을 다시 계산하지 않도록 */}

@@ -3,7 +3,7 @@ import { lang, rootHref, setLang, tr } from '../../i18n';
 
 const AUTHOR = 'sub9707';
 const AUTHOR_URL = 'https://github.com/sub9707';
-const CONTACT_EMAIL = 'sub9707@naver.com';
+const CONTACT_EMAIL = 'stopia_help@proton.me';
 
 interface Props {
   open: boolean;

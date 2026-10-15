@@ -342,3 +342,6 @@ export function useDocument(settings: Settings, setSettings: Dispatch<SetStateAc
 }
 
 export type DocumentApi = ReturnType<typeof useDocument>;
+
+/** 저장하지 않은 변경이 있으면 버려도 되는지 물어봄 (다른 파일을 열기 전) */
+export const confirmDiscard = (d: DocumentApi) => !(d.dirty && d.name) || confirm(tr('저장하지 않은 변경 내용이 있어요. 버리고 불러올까요?'));
