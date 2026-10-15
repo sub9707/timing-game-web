@@ -13,6 +13,9 @@
   color: var(--text);
   user-select: none;
   -webkit-user-select: none;
+  /* 터치: 두 번 탭 확대·탭 지연 없이 바로 반응 · 누를 때 회색 하이라이트 없음 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ───────── background ───────── */
@@ -81,6 +84,25 @@
 .app.has-canvas .canvas {
   width: min(100cqw, calc(100cqh * var(--ar)));
   height: auto;
+}
+
+/* 가로로 눕힌 휴대폰처럼 낮고 긴 화면: 글자가 너비 기준이라 세로로 넘치므로 16:9 틀에 맞춰 통째로 줄임 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app:not(.has-canvas) .canvas {
+    width: min(100cqw, calc(100cqh * 16 / 9));
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  /* 아래 메뉴 자리는 비워 두고 그 위에만 무대 (키 안내도 원래 자리로) */
+  .app:has(> .dock):not(.is-editing) .canvas-area {
+    bottom: 54px;
+  }
+
+  /* (아래쪽 '키 안내는 메뉴 위로' 규칙보다 우선) */
+  html .app:has(> .dock):not(.is-editing) .key-hint {
+    margin-bottom: 0;
+  }
 }
 
 /* 화면 편집: 줌·이동 + 비율 틀 표시 */
@@ -603,7 +625,7 @@
   margin-bottom: 64px;
 }
 
-/* ───── 처음 온 사람에게 설정 버튼 안내 — 은은하게 도는 빛 테두리 + 말풍선 ───── */
+/* ───── 아래 메뉴 안내 (처음·오랜만에 왔을 때) — 안내 중인 버튼에 은은하게 도는 빛 테두리 + 말풍선 ───── */
 @property --guide-angle {
   syntax: '<angle>';
   inherits: false;
@@ -615,14 +637,14 @@
   display: grid;
 }
 
-.dock-btn.is-guide {
+.dock .is-guide {
   position: relative;
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   border-color: transparent;
   animation: guide-aura 2.6s ease-in-out infinite;
 }
 
-.dock-btn.is-guide::before {
+.dock .is-guide::before {
   content: '';
   position: absolute;
   inset: -1px;
@@ -648,16 +670,18 @@
   pointer-events: none;
 }
 
-.dock-btn.is-guide svg {
+/* 설정 버튼은 톱니가 살짝 돌아감 */
+.dock .is-guide[data-tour='settings'] svg {
   animation: guide-gear 2.6s ease-in-out infinite;
 }
 
 .dock-guide {
   position: absolute;
-  right: -10px;
   bottom: calc(100% + 14px);
+  z-index: 1;
   width: max-content;
-  max-width: min(300px, calc(100vw - 32px));
+  min-width: 230px;
+  max-width: min(340px, calc(100vw - 32px));
   word-break: keep-all;
   display: grid;
   gap: 3px;
@@ -677,11 +701,29 @@
   animation: guide-in 0.5s 0.8s ease-out backwards;
 }
 
-/* 꼬리 — 설정 버튼 가운데를 가리킴 */
+/* 다음 단계부터는 기다리지 않고 바로 */
+.dock-guide.is-next {
+  animation-duration: 0.3s;
+  animation-delay: 0s;
+}
+
+/* 말풍선을 버튼의 어느 쪽에 맞출지 — 화면 밖으로 나가지 않게 (꼬리는 버튼 가운데) */
+.dock-guide.is-left {
+  left: -10px;
+}
+
+.dock-guide.is-right {
+  right: -10px;
+}
+
+.dock-guide.is-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .dock-guide::after {
   content: '';
   position: absolute;
-  right: 26px;
   bottom: -6px;
   width: 10px;
   height: 10px;
@@ -693,6 +735,23 @@
   border-bottom-right-radius: 2px;
 }
 
+.dock-guide.is-left::after {
+  left: 27px;
+}
+
+.dock-guide.is-right::after {
+  right: 27px;
+}
+
+.dock-guide.is-center::after {
+  left: calc(50% - 5px);
+}
+
+/* 메뉴 접기 버튼은 좁아서 꼬리를 그 가운데로 */
+.dock-toggle + .dock-guide.is-right::after {
+  right: 18px;
+}
+
 .dock-guide strong {
   font-size: 13px;
   font-weight: 700;
@@ -702,10 +761,48 @@
   color: transparent;
 }
 
-.dock-guide span {
+.dock-guide > span {
+  text-wrap: pretty;
   font-size: 12px;
   line-height: 1.45;
   color: #a1a1aa;
+}
+
+.dock-guide-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dock-guide-count {
+  margin-right: auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #71717a;
+}
+
+.dock-guide-btn {
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font: 600 12px/1 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  color: #d4d4d8;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s;
+}
+
+.dock-guide-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.dock-guide-btn.is-primary {
+  color: #fff;
+  background: color-mix(in srgb, var(--accent) 70%, #18181b);
+}
+
+.dock-guide-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #18181b);
 }
 
 .dock-guide-close {
@@ -767,9 +864,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dock-btn.is-guide,
-  .dock-btn.is-guide::before,
-  .dock-btn.is-guide svg,
+  .dock .is-guide,
+  .dock .is-guide::before,
+  .dock .is-guide svg,
   .dock-guide {
     animation: none;
   }

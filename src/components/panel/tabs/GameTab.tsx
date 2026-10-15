@@ -203,7 +203,7 @@ export function GameTab() {
       </Section>
 
       <Section title={tr('다른 입력 장치')} hint={tr('USB 빅버튼은 보통 키보드처럼 동작해서 조작 키에 그 키를 넣으면 돼요')}>
-        <Toggle label={tr('화면을 탭(클릭)해서 시작·정지')} checked={s.input.tap} onChange={(tap) => set({ input: { ...s.input, tap } })} />
+        <Toggle label={tr('화면을 클릭해서 시작·정지 (터치 화면은 항상 탭으로 돼요)')} checked={s.input.tap} onChange={(tap) => set({ input: { ...s.input, tap } })} />
         <Toggle label={tr('게임패드 (A 시작·정지 · B 리셋 · Y 치트)')} checked={s.input.gamepad} onChange={(gamepad) => set({ input: { ...s.input, gamepad } })} />
       </Section>
     </>

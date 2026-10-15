@@ -33,6 +33,9 @@ const NAMED: Record<string, string> = {
   Backquote: '`',
 };
 
+/** 터치가 주 입력인 기기 (휴대폰·태블릿) — 키 안내를 TAP 으로 */
+export const touchPrimary = typeof matchMedia !== 'undefined' && matchMedia('(hover: none) and (pointer: coarse)').matches;
+
 /** KeyboardEvent.code → 화면 표시용 라벨 */
 export function keyLabel(code: string) {
   if (NAMED[code]) return NAMED[code];

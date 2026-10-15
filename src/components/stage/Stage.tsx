@@ -2,7 +2,7 @@
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { designVars, lineStyle, textFxStyle } from '../../design/design';
 import { boxStyle, keyHintStage } from '../../design/layout';
-import { keyLabel } from '../../game/keys';
+import { keyLabel, touchPrimary } from '../../game/keys';
 import type { EditId, GameResult, Phase, RoundRecord, Settings } from '../../types';
 import { Background } from './Background';
 import { EditableText, type TextEditProps } from './EditableText';
@@ -174,7 +174,7 @@ export function Stage({ settings, view, bg, blindImageUrl, player, board, onClos
 
             <div className="key-hint" data-edit-id="hint" style={boxStyle(layout.hint, showHidden)} aria-hidden>
               {settings.keyHint.showKey && (
-                <kbd>{keyLabel(view.phase === 'result' && settings.resetKeys.length ? settings.resetKeys[0] : settings.actionKeys[0])}</kbd>
+                <kbd>{touchPrimary ? 'TAP' : keyLabel(view.phase === 'result' && settings.resetKeys.length ? settings.resetKeys[0] : settings.actionKeys[0])}</kbd>
               )}
               <EditableText as="span" text={settings.keyHint[keyHintStage(view.phase)]} {...textEdit?.('hint')} />
             </div>

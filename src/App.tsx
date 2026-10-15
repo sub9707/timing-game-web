@@ -22,6 +22,7 @@ import { useHistory } from './hooks/useHistory';
 import { useIdleCursor } from './hooks/useIdleCursor';
 import { useLocalState } from './hooks/useLocalState';
 import { useLock } from './hooks/useLock';
+import { useDockTour, type TourStep } from './hooks/useDockTour';
 import { useStageView } from './hooks/useStageView';
 import { track, useGameAnalytics } from './analytics';
 import { openOutputWindow, usePublisher } from './live/sync';
@@ -64,8 +65,6 @@ export default function App() {
   const [dockHidden, setDockHidden] = useLocalState('timer-game:dock-hidden', false);
   const [hideCursor, setHideCursor] = useLocalState('timer-game:hide-cursor', true);
   const [boardOpen, setBoardOpen] = useState(false);
-  /** 처음 온 사람에게 설정 버튼 안내 (한 번 열거나 닫으면 다시 안 띄움) */
-  const [guideSeen, setGuideSeen] = useLocalState('timer-game:guide-settings', false);
   /** 화면 직접 편집 (설정 패널이 서식 창 역할) */
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<EditId[]>([]);
@@ -115,10 +114,11 @@ export default function App() {
     setBoardOpen,
   });
 
-  // 게임패드 · 화면 탭
+  // 게임패드 · 화면 탭 — 터치는 항상, 마우스 클릭은 설정을 켰을 때만 (두 번째 손가락은 무시)
   useGamepad(settings.input.gamepad && !overlayOpen, (kind, t) => press(kind, t));
   const onStagePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (!settings.input.tap || overlayOpen || e.button !== 0) return;
+    const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    if (!(touch || settings.input.tap) || overlayOpen || e.button !== 0 || !e.isPrimary) return;
     press('action', e.timeStamp || performance.now());
   };
 
@@ -135,10 +135,19 @@ export default function App() {
   };
   const openSettings = () => (lock.locked ? setPinFor('settings') : doOpenSettings());
 
+  /** 아래 메뉴 안내 — 처음 왔거나 오랜만에 왔을 때 (지금 보이는 버튼만 · 설정을 직접 열면 끝) */
+  const tourSteps: TourStep[] = [
+    'board',
+    'lang',
+    ...(fs.supported ? (['fullscreen'] as const) : []),
+    ...(anyFullscreen ? [] : (['edit'] as const)),
+    'settings',
+    'toggle',
+  ];
+  const tour = useDockTour(tourSteps, !lock.locked && !dockHidden && !overlayOpen);
   useEffect(() => {
-    if (settingsOpen) setGuideSeen(true);
-  }, [settingsOpen, setGuideSeen]);
-  const showGuide = !guideSeen && !lock.locked && !dockHidden;
+    if (settingsOpen) tour.end();
+  }, [settingsOpen]);
 
   /* ───── 화면 편집 ───── */
 
@@ -308,9 +317,9 @@ export default function App() {
           locked={lock.locked}
           boardOpen={boardOpen}
           fullscreen={fs.app}
+          canFullscreen={fs.supported}
           canEdit={!anyFullscreen}
-          guide={showGuide}
-          onCloseGuide={() => setGuideSeen(true)}
+          tour={tour}
           onInfo={() => setInfoOpen(true)}
           onBoard={() => setBoardOpen((o) => !o)}
           onFullscreen={fs.toggle}
