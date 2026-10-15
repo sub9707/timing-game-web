@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
     imageRound: true,
   },
   showTarget: true,
-  mainTitle: 'TIME CHALLENGE',
+  mainTitle: 'STOPIA TIME CHALLENGE',
   subTitle: 'STOP AT THE EXACT MOMENT',
   successText: 'MISSION SUCCESS',
   failText: 'MISSION FAILED',

@@ -1,5 +1,5 @@
 import { CloseIcon } from './Icons';
-import { lang, setLang, tr } from '../../i18n';
+import { lang, rootHref, setLang, tr } from '../../i18n';
 
 const AUTHOR = 'sub9707';
 const AUTHOR_URL = 'https://github.com/sub9707';
@@ -19,11 +19,9 @@ export function InfoCard({ open, onClose }: Props) {
           <CloseIcon />
         </button>
 
-        <div className="info-mark" aria-hidden>
-          00:15:00
-        </div>
-        <h2 className="info-title">Time Challenge</h2>
-        <p className="info-desc">{tr('정확한 순간에 멈추는 타이밍 게임')}</p>
+        <img className="info-logo" src={rootHref('icon-192.png')} alt="" width={96} height={96} />
+        <h2 className="info-title">Stopia</h2>
+        <p className="info-desc">{tr('직접 커스텀할 수 있는 나만의 시간 맞추기 게임')}</p>
 
         <dl className="info-meta">
           <div>
@@ -43,11 +41,11 @@ export function InfoCard({ open, onClose }: Props) {
         </dl>
         <p className="info-contact">{tr('제휴·비즈니스, 기능 제안, 버그 제보 등 문의는 메일로 편하게 보내주세요')}</p>
         <nav className="info-links">
-          <a href="privacy.html" target="_blank" rel="noreferrer">
+          <a href={rootHref('privacy.html', true)} target="_blank" rel="noreferrer">
             {tr('개인정보처리방침')}
           </a>
           <span aria-hidden>·</span>
-          <a href="terms.html" target="_blank" rel="noreferrer">
+          <a href={rootHref('terms.html', true)} target="_blank" rel="noreferrer">
             {tr('이용약관')}
           </a>
           <span aria-hidden>·</span>

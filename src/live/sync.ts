@@ -36,7 +36,7 @@ type Msg = { type: 'state'; snap: Wire } | { type: 'hello' } | { type: 'bye' } |
 export function openOutputWindow() {
   const url = new URL(location.href);
   url.searchParams.set('output', '1');
-  window.open(url.toString(), 'time-challenge-output', 'popup,width=1280,height=720');
+  window.open(url.toString(), 'stopia-output', 'popup,width=1280,height=720');
 }
 
 /** 메인 창: 상태를 보내고, 송출 창 연결 수와 송출 창에서 누른 키를 받음 */

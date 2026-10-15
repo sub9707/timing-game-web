@@ -1664,13 +1664,12 @@
   right: 10px;
 }
 
-.info-mark {
-  font-family: 'Orbitron Variable', sans-serif;
-  font-weight: 600;
-  font-size: 22px;
-  letter-spacing: 0.04em;
-  color: #00e5ff;
-  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5));
+.info-logo {
+  display: block;
+  width: 96px;
+  height: 96px;
+  margin-inline: auto;
+  filter: drop-shadow(0 6px 18px rgba(92, 80, 255, 0.45));
 }
 
 .info-title {

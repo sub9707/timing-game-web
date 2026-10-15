@@ -30,7 +30,7 @@ export default function OutputApp() {
   }, [snap, press]);
 
   useEffect(() => {
-    document.title = tr('Time Challenge — 송출');
+    document.title = tr('Stopia — 송출');
     if (snap) document.documentElement.classList.toggle('is-transparent', snap.settings.bg.mode === 'transparent');
   }, [snap]);
 
