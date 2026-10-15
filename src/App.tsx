@@ -1,153 +1,153 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import { Background } from './components/Background';
-import { ExpandIcon, GearIcon, InfoIcon, ShrinkIcon } from './components/Icons';
-import { InfoCard } from './components/InfoCard';
-import { Burst, Result } from './components/Result';
-import { SettingsPanel } from './components/SettingsPanel';
-import { Digits, LiveTimer } from './components/Timer';
-import { designVars, lineStyle } from './design';
-import { useStoredImage } from './imageStore';
-import { isWithinTolerance, useSettings } from './settings';
-import { keyLabel, RESERVED_KEYS } from './keys';
-import { toCs } from './time';
-import type { GameResult, Phase, StagePreview } from './types';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react';
+import type { InsertKind } from './components/editor/EditorMenu';
+import { StageEditor, type EditView, type Zoom } from './components/editor/StageEditor';
+import { SettingsPanel } from './components/panel/SettingsPanel';
+import { AdRail, ConsentBanner, useAdsVisible } from './components/stage/AdRail';
+import type { TextEditProps } from './components/stage/EditableText';
+import { Stage, type StageView } from './components/stage/Stage';
+import { ChevronDownIcon, ExpandIcon, GearIcon, InfoIcon, LayoutIcon, LockIcon, ShrinkIcon, TrophyIcon } from './components/ui/Icons';
+import { InfoCard } from './components/ui/InfoCard';
+import { PinDialog } from './components/ui/PinDialog';
+import { SavedBadge } from './components/ui/SavedBadge';
+import { addItems, newImageItem, newShapeItem, newTextItem } from './design/items';
+import { getBox, itemIdOf, itemOf, keyHintStage, PREVIEW_FOR, setBox, TEXT_FIELD, uid } from './design/layout';
+import { RESERVED_KEYS } from './game/keys';
+import { ranking, useRecords } from './game/records';
+import { useGame, type PressKind } from './game/useGame';
+import { usePanelGesture } from './hooks/panelGesture';
+import { useFullscreen } from './hooks/useFullscreen';
+import { useGamepad } from './hooks/useGamepad';
+import { useHistory } from './hooks/useHistory';
+import { useIdleCursor } from './hooks/useIdleCursor';
+import { useInstall } from './hooks/useInstall';
+import { useLocalState } from './hooks/useLocalState';
+import { useLock } from './hooks/useLock';
+import { openOutputWindow, usePublisher } from './live/sync';
+import { useCustomFonts } from './settings/fonts';
+import { useSettings } from './settings/settings';
+import { onAssetChange, onAssetError, putAsset, useStoredImage } from './storage/assets';
+import { isDocFile, useDocument } from './storage/doc';
+import type { EditId, FontId, GameResult, Phase, ShapeKind, StagePreview } from './types';
+import { tr } from './i18n';
 
-/** 버튼 채터링/연타 방지 */
-const MIN_RUN_MS = 150;
-const MIN_RESULT_MS = 700;
-/** 숫자가 목표 시간에 닿은 뒤 성공을 터뜨리기 전 잠깐 멈춤 */
-const SETTLE_HOLD_MS = 280;
+const DEFAULT_VIEW: EditView = { grid: false, snapGrid: false, guides: true, rulers: false, showHidden: false, units: 'pct' };
+const NO_ZOOM: Zoom = { z: 1, x: 0, y: 0 };
+
+/** 그림 파일 고르기 */
+function pickImage(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => resolve(input.files?.[0] ?? null);
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
 
 export default function App() {
-  const [settings, setSettings] = useSettings();
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [startAt, setStartAt] = useState(0);
-  const [result, setResult] = useState<GameResult | null>(null);
-  const [round, setRound] = useState(0);
+  const [settings, setSettings, savedAt] = useSettings();
+  /** 실행 취소·다시 실행 — 설정·에셋 변경을 자동 기록 */
+  const history = useHistory(settings, setSettings);
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  /** 저장 파일(.tcpack) — 파일을 불러오면 그 전 실행 취소 기록은 지움 (파워포인트와 같음) */
+  const doc = useDocument(settings, setSettings, history.reset);
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  useCustomFonts(settings.customFonts);
+  const { records, player } = useRecords();
+  const lock = useLock();
+  const install = useInstall();
+  const fs = useFullscreen();
+
+  // 에셋(이미지)은 바뀌는 즉시 임시 저장됨 · 저장 실패(용량 부족)는 알림
+  const [assetSavedAt, setAssetSavedAt] = useState(0);
+  const [toast, setToast] = useState<{ at: number; message: string; tone: 'ok' | 'error' } | null>(null);
+  useEffect(() => onAssetChange((c) => c.source === 'user' && setAssetSavedAt(Date.now())), []);
+  useEffect(
+    () => onAssetError(() => setToast({ at: Date.now(), message: tr('저장 공간이 부족해 저장하지 못했어요 — 큰 그림을 줄이거나 지워 주세요'), tone: 'error' })),
+    [],
+  );
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  /** 이번 결과가 극적인 공개를 거쳐 나왔는지 (공개 순간 연출용) */
-  const [dramaticHit, setDramaticHit] = useState(false);
+  /** 잠금 해제 PIN 입력 (다음에 열 화면) */
+  const [pinFor, setPinFor] = useState<'settings' | 'edit' | null>(null);
   const [preview, setPreview] = useState<StagePreview | null>(null);
-  const revealTimer = useRef(0);
+  const [dockHidden, setDockHidden] = useLocalState('timer-game:dock-hidden', false);
+  const [hideCursor, setHideCursor] = useLocalState('timer-game:hide-cursor', true);
+  const [boardOpen, setBoardOpen] = useState(false);
+  /** 화면 직접 편집 (설정 패널이 서식 창 역할) */
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<EditId[]>([]);
+  /** 편집 보기 옵션 — 이 브라우저에만 저장 */
+  const [editView, setEditView] = useLocalState<EditView>('timer-game:edit-view', DEFAULT_VIEW);
+  const [zoom, setZoom] = useState<Zoom>(NO_ZOOM);
+  /** 화면에서 드래그로 옮기기·크기·회전 중 (그동안 패널은 멈춤) */
+  const [gesturing, setGesturing] = useState(false);
+  /** 패널의 색 선택기·슬라이더를 끄는 중 (그동안 패널 전체는 멈춤) */
+  const panelGesture = usePanelGesture();
+  /** 화면 위에서 글자를 직접 고치는 중인 요소 */
+  const [textEditing, setTextEditing] = useState<EditId | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const anyFullscreen = fs.any;
+  const showAds = useAdsVisible() && !fs.app;
+  useIdleCursor(hideCursor && anyFullscreen);
 
-  /* ───── 게임 진행 ───── */
+  const overlayOpen = settingsOpen || infoOpen || !!pinFor;
+  /** 게임 — 설정을 열어 둔 동안의 미리보기는 기록하지 않음 */
+  const game = useGame(settings, { record: !settingsOpen });
+  const gameRef = useRef(game);
+  gameRef.current = game;
+  const state = useRef({ overlayOpen, editing, boardOpen, settings });
+  state.current = { overlayOpen, editing, boardOpen, settings };
 
-  const overlayOpen = settingsOpen || infoOpen;
-  const state = useRef({ phase, startAt, lastAction: 0, settings, overlayOpen, result });
-  state.current.phase = phase;
-  state.current.result = result;
-  state.current.startAt = startAt;
-  state.current.settings = settings;
-  state.current.overlayOpen = overlayOpen;
+  /** 진행 중이면 파일·편집 단축키는 막음 */
+  const isPlaying = () => {
+    const ph = gameRef.current.phase;
+    return !state.current.overlayOpen && ph !== 'idle' && ph !== 'result';
+  };
 
-  const cancelReveal = () => clearTimeout(revealTimer.current);
-  useEffect(() => cancelReveal, []);
-
-  /** 결과 화면으로. 굴러갈 숫자(fromMs)가 있으면 settle 연출을 먼저 거침 */
-  const showResult = useCallback((r: GameResult, dramatic: boolean) => {
-    const finish = (hit: boolean) => {
-      state.current.lastAction = performance.now();
-      setDramaticHit(hit);
-      setRound((n) => n + 1);
-      setPhase('result');
-    };
-    if (r.fromMs === undefined || r.fromMs === r.elapsedMs) {
-      finish(dramatic);
-      return;
-    }
-    setDramaticHit(false);
-    setPhase('settle');
-    revealTimer.current = window.setTimeout(() => finish(true), (r.settleMs ?? 0) + SETTLE_HOLD_MS);
+  const press = useCallback((kind: PressKind, t = performance.now()) => {
+    if (state.current.overlayOpen) return;
+    gameRef.current.press(t, kind);
   }, []);
-
-  const press = useCallback((t: number, kind: 'action' | 'reset' | 'cheat') => {
-    const st = state.current;
-    const since = t - st.lastAction;
-
-    if (kind === 'cheat') {
-      // 실패 화면에서만: 목표 시간으로 굴러간 뒤 성공 처리
-      const r = st.result;
-      if (st.phase !== 'result' || !r || r.success) return;
-      st.lastAction = t;
-      const { targetMs, cheatTargetOn, cheatTargetMs, cheatSettleMs } = st.settings;
-      const to = cheatTargetOn ? cheatTargetMs : targetMs;
-      const next = { elapsedMs: to, diffMs: to - targetMs, success: true, fromMs: r.elapsedMs, settleMs: cheatSettleMs };
-      st.result = next;
-      setResult(next);
-      showResult(next, true);
-      return;
-    }
-
-    if (kind === 'reset') {
-      // 운영자용: 진행 중 취소 또는 결과 화면 리셋
-      if (st.phase === 'idle') return;
-      st.lastAction = t;
-      cancelReveal();
-      setResult(null);
-      setPhase('idle');
-    } else if (st.phase === 'idle') {
-      st.lastAction = t;
-      setResult(null);
-      setDramaticHit(false);
-      setStartAt(t);
-      setPhase('running');
-    } else if (st.phase === 'running') {
-      if (since < MIN_RUN_MS) return;
-      st.lastAction = t;
-      const { targetMs } = st.settings;
-      // 화면에 보이는 1/100초 값으로 판정
-      const realMs = toCs(t - st.startAt) * 10;
-      const success = isWithinTolerance(st.settings, realMs - targetMs);
-      // 성공 시 목표 시간으로 보여주기 옵션 (연출을 켜면 실제 시간에서 굴러감)
-      const snap = success && st.settings.snapToTarget;
-      const elapsedMs = snap ? targetMs : realMs;
-      const animate = snap && st.settings.snapAnimate;
-      const next: GameResult = {
-        elapsedMs,
-        diffMs: elapsedMs - targetMs,
-        success,
-        ...(animate && { fromMs: realMs, settleMs: st.settings.settleMs }),
-      };
-      st.result = next;
-      setResult(next);
-      // 블라인드로 가려진 채 멈췄으면 바로 공개하지 않고 한 번 더 묻기
-      const { blind, blindAfterMs, dramatic } = st.settings;
-      if (blind && dramatic && t - st.startAt >= blindAfterMs) {
-        setPhase('confirm');
-        return;
-      }
-      showResult(next, false);
-    } else if (st.phase === 'confirm') {
-      if (since < MIN_RESULT_MS) return;
-      st.lastAction = t;
-      setPhase('reveal');
-      revealTimer.current = window.setTimeout(() => {
-        const r = state.current.result;
-        if (r) showResult(r, true);
-      }, st.settings.dramaticMs);
-    } else if (st.phase === 'reveal' || st.phase === 'settle') {
-      return; // 연출 중엔 진행 키 무시 (리셋 키로만 취소)
-    } else {
-      // 리셋 키가 따로 지정돼 있으면 진행 키로는 리셋 불가
-      if (st.settings.resetKeys.length > 0 || since < MIN_RESULT_MS) return;
-      st.lastAction = t;
-      setResult(null);
-      setPhase('idle');
-    }
-  }, [showResult]);
 
   /* ───── 키보드: 매핑된 키 외 전부 차단 ───── */
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      // 실행 취소 Ctrl+Z · 다시 실행 Ctrl+Y / Ctrl+Shift+Z (화면 위 글자 편집 중엔 글자 단위로)
+      if (e.type === 'keydown' && mod && (e.code === 'KeyZ' || e.code === 'KeyY')) {
+        if ((e.target as HTMLElement | null)?.isContentEditable) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (isPlaying() || lock.locked) return;
+        const h = historyRef.current;
+        if (e.code === 'KeyY' || e.shiftKey) h.redo();
+        else h.undo();
+        return;
+      }
+      // 파일: Ctrl+S 저장 · Ctrl+Shift+S 다른 이름으로 · Ctrl+O 불러오기
+      if (e.type === 'keydown' && mod && (e.code === 'KeyS' || e.code === 'KeyO')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isPlaying() || e.repeat || lock.locked) return;
+        const d = docRef.current;
+        if (e.code === 'KeyS') void (e.shiftKey ? d.saveAs() : d.save());
+        else if (!(d.dirty && d.name) || confirm(tr('저장하지 않은 변경 내용이 있어요. 버리고 불러올까요?'))) void d.open();
+        return;
+      }
       if (state.current.overlayOpen) {
         // 키 매핑 입력 중에는 ESC 를 캡처 취소로 사용
         const capturing = (e.target as HTMLElement | null)?.closest?.('[data-key-capture]');
-        if (e.type === 'keydown' && e.key === 'Escape' && !capturing) {
+        // 화면 편집 중 ESC 는 편집기가 처리 (선택 해제 → 편집 끝)
+        if (e.type === 'keydown' && e.key === 'Escape' && !capturing && !state.current.editing) {
           setSettingsOpen(false);
           setInfoOpen(false);
+          setPinFor(null);
         }
         return; // 설정·정보 화면에선 입력 허용
       }
@@ -157,10 +157,14 @@ export default function App() {
       if (e.type !== 'keydown' || e.repeat) return;
       const { actionKeys, resetKeys, cheatKeys } = state.current.settings;
       const kind = resetKeys.includes(e.code) ? 'reset' : actionKeys.includes(e.code) ? 'action' : cheatKeys.includes(e.code) ? 'cheat' : null;
+      // 랭킹 화면: L 로 열고 닫기 (대기·결과에서) · ESC 로 닫기
+      if (!kind && e.code === 'KeyL' && !isPlaying()) return setBoardOpen((o) => !o);
+      if (!kind && e.key === 'Escape') return setBoardOpen(false);
       if (!kind) return;
+      if (state.current.boardOpen) setBoardOpen(false);
       const now = performance.now();
       // keydown 발생 시각을 그대로 사용해 렌더 지연 영향을 없앰
-      press(e.timeStamp > 0 && Math.abs(now - e.timeStamp) < 1000 ? e.timeStamp : now, kind);
+      press(kind, e.timeStamp > 0 && Math.abs(now - e.timeStamp) < 1000 ? e.timeStamp : now);
     };
     const opts = { capture: true };
     window.addEventListener('keydown', onKey, opts);
@@ -171,139 +175,343 @@ export default function App() {
       window.removeEventListener('keyup', onKey, opts);
       window.removeEventListener('keypress', onKey, opts);
     };
-  }, [press]);
+  }, [press, lock.locked]);
 
-  const openSettings = () => {
-    cancelReveal();
+  // 게임패드 · 화면 탭
+  useGamepad(settings.input.gamepad && !overlayOpen, (kind, t) => press(kind, t));
+  const onStagePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (!settings.input.tap || overlayOpen || e.button !== 0) return;
+    press('action', e.timeStamp || performance.now());
+  };
+
+  /* ───── 설정 · 잠금 ───── */
+
+  /** 설정 열기 (잠금은 PIN 으로 풀린 뒤 부름) */
+  const doOpenSettings = () => {
+    game.goIdle();
     setPreview(null);
     setInfoOpen(false);
-    setPhase('idle');
-    setResult(null);
+    setBoardOpen(false);
     setSettingsOpen(true);
+  };
+  const openSettings = () => (lock.locked ? setPinFor('settings') : doOpenSettings());
+
+  /* ───── 화면 편집 ───── */
+
+  const record = history.mark;
+
+  const stopEditing = () => {
+    setTextEditing(null);
+    setGesturing(false);
+    setEditing(false);
+    setSelected([]);
+    setPreview(null);
+    setZoom(NO_ZOOM);
   };
 
   const closeSettings = () => {
     setSettingsOpen(false);
-    setPreview(null);
+    stopEditing();
     (document.activeElement as HTMLElement | null)?.blur();
   };
 
-  /* ───── 이미지 (배경 · 블라인드 스피너) ───── */
+  const startEditing = (unlocked = false) => {
+    // 전체화면(방송·진행 중)에서는 편집 불가
+    if (anyFullscreen) return;
+    if (lock.locked && !unlocked) return setPinFor('edit');
+    if (!settingsOpen) doOpenSettings();
+    setEditing(true);
+    setSelected([]);
+  };
+
+  // 편집 중 전체화면이 되면 편집 종료
+  useEffect(() => {
+    if (anyFullscreen && editing) stopEditing();
+  }, [anyFullscreen]);
+
+  /** 결과 자리 요소를 하나만 고르면 그 상태를 화면에 띄움 */
+  const selectElements = (ids: EditId[]) => {
+    setSelected(ids);
+    const pv = ids.length === 1 ? PREVIEW_FOR[ids[0]] : undefined;
+    if (pv) setPreview(pv);
+  };
+
+  /** 삽입 — 텍스트 상자 · 그림 · 도형 (at: 무대 가운데 기준 %) */
+  const insert = async (kind: InsertKind, at?: { x: number; y: number }, file?: File) => {
+    if (!editing) startEditing();
+    const s = settingsRef.current;
+    let item;
+    if (kind === 'image') {
+      const f = file ?? (await pickImage());
+      if (!f) return;
+      item = await newImageItem(s, f, f.name);
+      if (!item) return setToast({ at: Date.now(), message: tr('그림을 저장하지 못했어요 (저장 공간 부족)'), tone: 'error' });
+    } else if (kind === 'text') item = newTextItem(s);
+    else item = newShapeItem(s, kind as ShapeKind);
+    if (at) Object.assign(item, at);
+    record(tr('{0} 삽입', kind === 'text' ? tr('텍스트 상자') : kind === 'image' ? tr('그림') : tr('도형')));
+    const added = item;
+    setSettings((prev) => addItems(prev, [added]));
+    setSelected([itemIdOf(added.id)]);
+  };
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  /** 글꼴 파일 올리기 → 올린 글꼴 id */
+  const addFont = async (file: File): Promise<FontId | null> => {
+    const id = uid();
+    if (!(await putAsset(`font:${id}`, file, 'load'))) return null;
+    record(tr('글꼴 추가'));
+    setSettings((s) => ({ ...s, customFonts: [...s.customFonts, { id, name: file.name.replace(/\.[^.]+$/, '') }] }));
+    return `custom:${id}`;
+  };
+
+  /* ───── 무대 상태 (미리보기 반영) ───── */
 
   const bgImage = useStoredImage('background');
   const blindImage = useStoredImage('blindImage');
 
-  /* ───── 전체화면 ───── */
+  // 설정 중 미리보기는 실제 게임 상태 대신 화면에만 반영
+  const pv = settingsOpen ? preview : null;
+  const previewStart = useRef(0);
+  useEffect(() => {
+    if (pv === 'running') previewStart.current = performance.now() - 7420;
+  }, [pv]);
+  const viewPhase: Phase = pv === 'confirm' ? 'confirm' : pv === 'result' || pv === 'result-fail' ? 'result' : pv === 'running' ? 'running' : game.phase;
+  const viewResult: GameResult | null =
+    pv === 'result'
+      ? { elapsedMs: game.targetMs, diffMs: 0, success: true }
+      : pv === 'result-fail'
+        ? { elapsedMs: game.targetMs + 1230, diffMs: 1230, success: false }
+        : game.result;
+  const view: StageView = {
+    phase: viewPhase,
+    result: viewResult,
+    startAt: pv === 'running' ? previewStart.current || performance.now() - 7420 : game.startAt,
+    countdownAt: game.countdownAt,
+    round: game.round,
+    dramaticHit: game.dramaticHit && !pv,
+    targetMs: game.targetMs,
+    realPhase: pv ? 'idle' : game.phase,
+    forceBlind: pv === 'blind',
+  };
+  const viewPhaseRef = useRef(viewPhase);
+  viewPhaseRef.current = viewPhase;
+  const board = boardOpen ? ranking(records, settings.leaderboard) : null;
+
+  /** 텍스트 요소의 제자리 편집 연결 (편집 모드에서만 켜짐) */
+  const textEdit = (id: EditId): TextEditProps => ({
+    active: editing && textEditing === id,
+    onCommit: (text) => {
+      record(tr('문구 편집'));
+      // 키 안내는 지금 보이는 상태의 문구를 고침
+      if (id === 'hint') {
+        const stage = keyHintStage(viewPhaseRef.current);
+        setSettings((s) => ({ ...s, keyHint: { ...s.keyHint, [stage]: text } }));
+        return;
+      }
+      // 텍스트 상자
+      if (itemOf(settingsRef.current, id)) {
+        setSettings((s) => ({ ...setBox(s, id, getBox(s, id)), items: s.items.map((i) => (itemIdOf(i.id) === id && i.type === 'text' ? { ...i, text } : i)) }));
+        return;
+      }
+      const field = TEXT_FIELD[id];
+      if (field) setSettings((s) => ({ ...s, [field]: text }));
+    },
+    onDone: () => setTextEditing((cur) => (cur === id ? null : cur)),
+  });
+
+  /* ───── 송출 창 ───── */
+  const { outputs } = usePublisher(
+    {
+      settings,
+      phase: view.phase,
+      realPhase: view.realPhase,
+      result: view.result,
+      startAt: view.startAt,
+      countdownAt: view.countdownAt,
+      round: view.round,
+      dramaticHit: view.dramaticHit,
+      targetMs: view.targetMs,
+      forceBlind: !!view.forceBlind,
+      player,
+      board,
+    },
+    (kind) => press(kind),
+  );
+
+  /* ───── 파일 끌어다 놓기 · 닫기 경고 · 투명 배경 ───── */
 
   useEffect(() => {
-    const onChange = () => setFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
+    const over = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+      setDragOver(true);
+    };
+    const leave = (e: DragEvent) => {
+      if (!e.relatedTarget) setDragOver(false);
+    };
+    const drop = (e: DragEvent) => {
+      if (!e.dataTransfer?.files.length) return;
+      e.preventDefault();
+      setDragOver(false);
+      for (const f of e.dataTransfer.files) {
+        if (isDocFile(f)) {
+          const d = docRef.current;
+          if (!(d.dirty && d.name) || confirm(tr('저장하지 않은 변경 내용이 있어요. 버리고 불러올까요?'))) void d.openFile(f);
+          return;
+        }
+        // 그림은 화면 편집에 삽입 (놓은 자리에)
+        if (f.type.startsWith('image/') && !lock.locked) {
+          const u = document.querySelector('.canvas')?.getBoundingClientRect();
+          const at = u ? { x: ((e.clientX - (u.left + u.width / 2)) / u.width) * 100, y: ((e.clientY - (u.top + u.height / 2)) / u.height) * 100 } : undefined;
+          void insertRef.current('image', at, f);
+        }
+      }
+    };
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    return () => {
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('drop', drop);
+    };
+  }, [lock.locked]);
+  const insertRef = useRef(insert);
+  insertRef.current = insert;
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      const d = docRef.current;
+      if (d.name && d.dirty) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('is-transparent', settings.bg.mode === 'transparent');
+  }, [settings.bg.mode]);
 
   const toggleFullscreen = (e: MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.blur();
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen().catch(() => undefined);
+    fs.toggle();
   };
 
   /* ───── render ───── */
 
-  // 설정 중 미리보기는 실제 게임 상태 대신 화면에만 반영
-  const pv = settingsOpen ? preview : null;
-  const viewPhase: Phase = pv === 'confirm' ? 'confirm' : pv === 'result' || pv === 'result-fail' ? 'result' : phase;
-  const viewResult: GameResult | null =
-    pv === 'result'
-      ? { elapsedMs: settings.targetMs, diffMs: 0, success: true }
-      : pv === 'result-fail'
-        ? { elapsedMs: settings.targetMs + 1230, diffMs: 1230, success: false }
-        : result;
-
-  // 공개 전(confirm·reveal)에는 결과를 숨김
-  const shown = viewPhase === 'result' ? viewResult : null;
-  const outcome = shown ? (shown.success ? 'is-success' : 'is-fail') : '';
-  const { design } = settings;
-  const dv = designVars(design);
-  const themeVars = { '--accent': settings.accent, '--text': settings.text, ...dv.style } as CSSProperties;
+  const badgeAt = Math.max(savedAt, assetSavedAt, doc.fileSavedAt, toast?.at ?? 0);
+  const badgeMsg =
+    toast && toast.at === badgeAt ? toast.message : doc.fileSavedAt === badgeAt ? tr('파일에 저장됨 · {0}', doc.name ?? '') : tr('임시 저장됨');
 
   return (
-    <div
-      className={`app theme-${settings.theme} phase-${viewPhase} ${outcome} ${dramaticHit && !pv ? 'is-dramatic' : ''} ${pv ? 'is-previewing' : ''} ${dv.className}`}
-      style={{ ...themeVars, '--reveal-ms': `${settings.dramaticMs}ms`, '--settle-ms': `${viewResult?.settleMs ?? settings.settleMs}ms` } as CSSProperties}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <Background bg={settings.bg} imageUrl={bgImage.url} />
-      {phase === 'reveal' && <div className="reveal-veil" aria-hidden />}
-      {phase === 'settle' && <div className="reveal-veil is-settle" aria-hidden />}
-      {shown && dramaticHit && <div key={round} className="reveal-flash" aria-hidden />}
-
-      <main className="stage">
-        {(settings.mainTitle || settings.subTitle) && (
-          <header className="titles">
-            {settings.mainTitle && <h1 className="main-title">{settings.mainTitle}</h1>}
-            {settings.subTitle && <p className="sub-title">{settings.subTitle}</p>}
-          </header>
+    <>
+      <Stage
+        settings={settings}
+        view={view}
+        bg={bgImage}
+        blindImageUrl={blindImage.url}
+        player={player}
+        board={board}
+        className={`${pv || editing ? 'is-previewing' : ''} ${editing ? 'is-editing' : ''} ${gesturing ? 'is-gesturing' : ''} ${showAds ? 'has-ads' : ''} ${dragOver ? 'is-drop' : ''}`}
+        textEdit={editing ? textEdit : undefined}
+        showHidden={editing && editView.showHidden}
+        zoom={editing ? zoom : undefined}
+        onStagePointerDown={onStagePointerDown}
+      >
+        {showAds && (
+          <>
+            <AdRail side="left" />
+            <AdRail side="right" />
+          </>
         )}
 
-        <div className="frame-wrap">
-          {shown?.success && <Burst key={round} />}
-          {shown?.success && dramaticHit && <Burst key={`${round}-2`} />}
-          <div key={round} className={`frame ${outcome}`}>
-            <div className="frame-lines" aria-hidden>
-              {Array.from({ length: design.borderLines }, (_, i) => (
-                <span key={i} className={design.borderFill.mode === 'gradient' ? 'is-gradient' : ''} style={lineStyle(design, i)} />
-              ))}
-            </div>
-            {settings.showTarget && (
-              <div className="target">
-                <span className="target-label">TARGET</span>
-                <Digits ms={settings.targetMs} className="target-digits" />
-              </div>
+        <nav className={`dock ${dockHidden ? 'is-hidden' : ''}`}>
+          <div className="dock-items" inert={dockHidden}>
+            <button
+              className="dock-btn"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setInfoOpen(true);
+              }}
+              aria-label={tr('정보')}
+              tabIndex={-1}
+            >
+              <InfoIcon />
+            </button>
+            <button
+              className={`dock-btn ${boardOpen ? 'is-on' : ''}`}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setBoardOpen((o) => !o);
+              }}
+              aria-label={tr('랭킹')}
+              title={tr('랭킹 화면 (L)')}
+              tabIndex={-1}
+            >
+              <TrophyIcon />
+            </button>
+            <button className="dock-btn" onClick={toggleFullscreen} aria-label={tr('전체화면')} tabIndex={-1}>
+              {fs.app ? <ShrinkIcon /> : <ExpandIcon />}
+            </button>
+            {!anyFullscreen && (
+              <button
+                className="dock-btn"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  startEditing();
+                }}
+                aria-label={tr('화면 편집')}
+                title={tr('화면 편집 — 요소를 직접 옮기고 크기 조절')}
+                tabIndex={-1}
+              >
+                <LayoutIcon />
+              </button>
             )}
-            <LiveTimer
-              phase={viewPhase}
-              startAt={startAt}
-              stoppedMs={viewResult?.elapsedMs ?? 0}
-              fromMs={viewResult?.fromMs}
-              settleMs={viewResult?.settleMs ?? settings.settleMs}
-              blind={settings.blind}
-              blindAfterMs={settings.blindAfterMs}
-              blindFx={settings.blindFx}
-              blindImageUrl={blindImage.url}
-              forceBlind={pv === 'blind'}
-            />
+            <button className="dock-btn" onClick={openSettings} aria-label={tr('설정')} title={lock.locked ? tr('잠김 — PIN 필요') : tr('설정')} tabIndex={-1}>
+              {lock.locked ? <LockIcon /> : <GearIcon />}
+            </button>
           </div>
-        </div>
+          <button
+            className="dock-toggle"
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setDockHidden((h) => !h);
+            }}
+            aria-label={dockHidden ? tr('메뉴 보이기') : tr('메뉴 숨기기')}
+            aria-expanded={!dockHidden}
+            title={dockHidden ? tr('메뉴 보이기') : tr('메뉴 숨기기')}
+            tabIndex={-1}
+          >
+            <ChevronDownIcon />
+          </button>
+        </nav>
+      </Stage>
 
-        <Result phase={viewPhase} result={shown} successText={settings.successText} failText={settings.failText} revealPrompt={settings.revealPrompt} promptStyle={settings.revealPromptStyle} resultStyle={settings.resultStyle} />
-
-        <div className="key-hint" aria-hidden>
-          <kbd>{keyLabel(viewPhase === 'result' && settings.resetKeys.length ? settings.resetKeys[0] : settings.actionKeys[0])}</kbd>
-          <span>{viewPhase === 'idle' ? 'START' : viewPhase === 'running' ? 'STOP' : viewPhase === 'confirm' || viewPhase === 'reveal' || viewPhase === 'settle' ? 'REVEAL' : 'RESET'}</span>
-        </div>
-      </main>
-
-      <nav className="dock">
-        <button
-          className="dock-btn"
-          onClick={(e) => {
-            e.currentTarget.blur();
-            setInfoOpen(true);
-          }}
-          aria-label="정보"
-          tabIndex={-1}
-        >
-          <InfoIcon />
-        </button>
-        <button className="dock-btn" onClick={toggleFullscreen} aria-label="전체화면" tabIndex={-1}>
-          {fullscreen ? <ShrinkIcon /> : <ExpandIcon />}
-        </button>
-        <button className="dock-btn" onClick={openSettings} aria-label="설정" tabIndex={-1}>
-          <GearIcon />
-        </button>
-      </nav>
-
+      {/* 패널·편집기·알림은 .app 바깥 — 디자인 변수(.app 에 걸림)가 바뀔 때 패널 전체 스타일을 다시 계산하지 않도록 */}
       <InfoCard open={infoOpen} onClose={() => setInfoOpen(false)} />
+
+      {pinFor && (
+        <PinDialog
+          onCancel={() => setPinFor(null)}
+          onSubmit={async (pin) => {
+            if (!(await lock.unlock(pin))) return false;
+            const next = pinFor;
+            setPinFor(null);
+            // 잠금이 풀린 뒤 원래 열려던 화면으로
+            if (next === 'edit') startEditing(true);
+            else doOpenSettings();
+            return true;
+          }}
+        />
+      )}
+
+      <SavedBadge at={badgeAt} message={badgeMsg} tone={toast && toast.at === badgeAt ? toast.tone : 'ok'} />
+
+      <ConsentBanner />
+
+      {dragOver && <div className="drop-hint">{tr('놓으면 열기 · 그림은 화면에 삽입')}</div>}
 
       <SettingsPanel
         open={settingsOpen}
@@ -314,7 +522,58 @@ export default function App() {
         preview={preview}
         onPreview={setPreview}
         onClose={closeSettings}
+        clearScrim={!!pv || editing}
+        frozen={gesturing || panelGesture}
+        doc={doc}
+        editing={editing}
+        selected={selected}
+        onSelect={selectElements}
+        onStartEditing={() => startEditing()}
+        onStopEditing={stopEditing}
+        canEdit={!anyFullscreen}
+        editView={editView}
+        onEditView={setEditView}
+        record={record}
+        history={history}
+        app={{
+          boardOpen,
+          setBoardOpen,
+          lock,
+          outputs,
+          openOutput: openOutputWindow,
+          install,
+          zoom,
+          setZoom,
+          insert: (k) => void insert(k),
+          addFont,
+          hideCursor,
+          setHideCursor,
+        }}
       />
-    </div>
+
+      {editing && (
+        <StageEditor
+          settings={settings}
+          onChange={setSettings}
+          selected={selected}
+          onSelect={selectElements}
+          onEditText={(id) => {
+            // 파워포인트처럼 화면 위에서 바로 고침
+            selectElements([id]);
+            setTextEditing(id);
+          }}
+          textEditing={textEditing}
+          onExit={stopEditing}
+          view={editView}
+          onView={setEditView}
+          record={record}
+          history={history}
+          onGesture={setGesturing}
+          zoom={zoom}
+          onZoom={setZoom}
+          onInsert={(k, at) => void insert(k, at)}
+        />
+      )}
+    </>
   );
 }
