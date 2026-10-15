@@ -91,6 +91,7 @@ function body(t: SeoText) {
         <h1>${esc(t.heading)}</h1>
         <p>${esc(t.intro)}</p>
         <ul>${t.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
+        <p><a href="guide.html">${t.lang === 'ko' ? '사용 가이드 · 10초 맞추기 요령' : 'Guide · tips for nailing 10 seconds'}</a></p>
       </main>`;
 }
 
@@ -123,23 +124,25 @@ function seo(env: SeoEnv): Plugin {
 
       if (env.site) {
         const day = new Date().toISOString().slice(0, 10);
-        const koUrl = new URL('', env.site).href;
-        const enUrl = new URL('en/', env.site).href;
-        const alt = `
-    <xhtml:link rel="alternate" hreflang="ko" href="${koUrl}"/>
-    <xhtml:link rel="alternate" hreflang="en" href="${enUrl}"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="${enUrl}"/>`;
-        const page = (loc: string, priority: string) => `  <url>
-    <loc>${loc}</loc>
+        const url = (p: string) => new URL(p, env.site).href;
+        // 언어별 짝 페이지 (한국어 주소, 영어 주소)
+        const alt = (ko: string, en: string) => `
+    <xhtml:link rel="alternate" hreflang="ko" href="${url(ko)}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${url(en)}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${url(en)}"/>`;
+        const page = (loc: string, pair: [string, string], priority: string) => `  <url>
+    <loc>${url(loc)}</loc>
     <lastmod>${day}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>${alt}
+    <priority>${priority}</priority>${alt(...pair)}
   </url>`;
         const doc = (p: string) => `  <url>\n    <loc>${new URL(p, env.site).href}</loc>\n    <lastmod>${day}</lastmod>\n    <priority>0.3</priority>\n  </url>`;
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${page(koUrl, '1.0')}
-${page(enUrl, '0.9')}
+${page('', ['', 'en/'], '1.0')}
+${page('en/', ['', 'en/'], '0.9')}
+${page('guide.html', ['guide.html', 'en/guide.html'], '0.7')}
+${page('en/guide.html', ['guide.html', 'en/guide.html'], '0.6')}
 ${doc('privacy.html')}
 ${doc('terms.html')}
 </urlset>

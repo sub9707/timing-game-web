@@ -41,6 +41,10 @@ export function InfoCard({ open, onClose }: Props) {
         </dl>
         <p className="info-contact">{tr('제휴·비즈니스, 기능 제안, 버그 제보 등 문의는 메일로 편하게 보내주세요')}</p>
         <nav className="info-links">
+          <a href={rootHref(lang === 'en' ? 'en/guide.html' : 'guide.html')} target="_blank" rel="noreferrer">
+            {tr('사용 가이드')}
+          </a>
+          <span aria-hidden>·</span>
           <a href={rootHref('privacy.html', true)} target="_blank" rel="noreferrer">
             {tr('개인정보처리방침')}
           </a>

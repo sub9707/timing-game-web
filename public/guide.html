@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>사용 가이드 · 10초 맞추기 게임 스토피아 활용법과 요령</title>
+    <meta
+      name="description"
+      content="시간 맞추기 게임 스토피아(Stopia) 사용 가이드. 기본 규칙과 판정, 행사·수업·방송에서 쓰는 법, OBS 송출 설정, 화면 꾸미기, 10초 맞추기를 잘하는 요령과 자주 묻는 질문을 정리했어요."
+    />
+    <link rel="canonical" href="https://stopia.site/guide.html" />
+    <link rel="alternate" hreflang="ko" href="https://stopia.site/guide.html" />
+    <link rel="alternate" hreflang="en" href="https://stopia.site/en/guide.html" />
+    <link rel="alternate" hreflang="x-default" href="https://stopia.site/en/guide.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Stopia" />
+    <meta property="og:title" content="스토피아 사용 가이드 — 10초 맞추기 게임 활용법과 요령" />
+    <meta property="og:description" content="기본 규칙, 행사·수업·방송 활용법, OBS 송출, 10초 맞추기 요령까지." />
+    <meta property="og:url" content="https://stopia.site/guide.html" />
+    <meta property="og:image" content="https://stopia.site/og-image.jpg" />
+    <meta property="og:locale" content="ko_KR" />
+    <link rel="icon" href="favicon.ico" sizes="48x48" />
+    <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f8;
+        --fg: #18181b;
+        --muted: #63636b;
+        --line: #e4e4e7;
+        --card: #ffffff;
+        --accent: #0891b2;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0b10;
+          --fg: #f4f4f5;
+          --muted: #a1a1aa;
+          --line: #27272a;
+          --card: #131318;
+          --accent: #22d3ee;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.75 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+        word-break: keep-all;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 20px 80px;
+      }
+      h1 {
+        font-size: 30px;
+        line-height: 1.3;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 44px 0 10px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+      h3 {
+        font-size: 17px;
+        margin: 24px 0 6px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      a {
+        color: var(--accent);
+      }
+      nav {
+        margin-bottom: 28px;
+        font-size: 14px;
+      }
+      .cta {
+        display: inline-block;
+        margin: 4px 0 24px;
+        padding: 10px 18px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        .cta {
+          color: #04161b;
+        }
+      }
+      .toc {
+        padding: 14px 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        font-size: 15px;
+      }
+      .toc ol {
+        margin: 6px 0 0;
+        padding-left: 20px;
+      }
+      kbd {
+        font: 600 13px/1 ui-monospace, monospace;
+        padding: 3px 7px;
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 6px;
+        background: var(--card);
+      }
+      .tip {
+        padding: 12px 16px;
+        border-left: 3px solid var(--accent);
+        background: var(--card);
+        border-radius: 0 10px 10px 0;
+      }
+      dt {
+        font-weight: 700;
+        margin-top: 16px;
+      }
+      dd {
+        margin: 4px 0 0;
+      }
+      footer {
+        margin-top: 56px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav><a href="./">← 스토피아(Stopia) 게임으로</a> · <a href="en/guide.html" hreflang="en" lang="en">English</a></nav>
+
+      <h1>스토피아 사용 가이드</h1>
+      <p class="lead">흘러가는 타이머를 목표 시간에 딱 맞춰 멈추는 게임, 스토피아를 행사·수업·방송에서 200% 활용하는 방법을 정리했어요.</p>
+      <a class="cta" href="./">지금 바로 플레이하기</a>
+
+      <div class="toc">
+        <b>목차</b>
+        <ol>
+          <li><a href="#rules">기본 규칙과 조작</a></li>
+          <li><a href="#judge">성공 판정 정하기</a></li>
+          <li><a href="#event">행사·수업에서 쓰는 법</a></li>
+          <li><a href="#stream">프로젝터·OBS 송출</a></li>
+          <li><a href="#design">화면 꾸미기</a></li>
+          <li><a href="#records">참가자 기록과 랭킹</a></li>
+          <li><a href="#tips">10초 맞추기를 잘하는 요령</a></li>
+          <li><a href="#faq">자주 묻는 질문</a></li>
+        </ol>
+      </div>
+
+      <h2 id="rules">1. 기본 규칙과 조작</h2>
+      <p>
+        화면의 타이머가 0초부터 올라가기 시작하면, 목표 시간(기본 15초, 예: 10초)에 최대한 가깝게 멈추는 게임이에요. 멈춘 시간이 허용 오차 안이면
+        <b>MISSION SUCCESS</b>, 벗어나면 <b>MISSION FAILED</b>가 떠요.
+      </p>
+      <ul>
+        <li><kbd>SPACE</kbd> 한 번: 시작 → 한 번 더: 정지 → 결과 확인 후 다시 누르면 다음 라운드</li>
+        <li>설정 › 게임 탭에서 시작·정지 키와 리셋 키를 원하는 키로 바꿀 수 있어요.</li>
+        <li>키보드가 없는 환경이라면 설정 › 게임 탭의 "화면을 탭(클릭)해서 시작·정지"를 켜서 화면을 눌러 조작하거나, 게임패드 버튼을 쓸 수 있어요.</li>
+        <li>목표 시간은 매 라운드 무작위로 정해지게 할 수도 있어요. (설정 › 게임 › 라운드마다 목표 시간 무작위)</li>
+      </ul>
+
+      <h2 id="judge">2. 성공 판정 정하기</h2>
+      <p>참가자 수준과 분위기에 맞춰 난이도를 조절하세요.</p>
+      <ul>
+        <li><b>퍼센트 허용 오차</b>: 목표 시간의 몇 %까지 성공으로 칠지 정해요. 10초 목표에 1%면 9.90~10.10초가 성공이에요.</li>
+        <li><b>직접 입력</b>: 이른 쪽과 늦은 쪽 허용 범위를 따로 정할 수 있어요. "넘기면 무조건 실패" 같은 규칙도 만들 수 있어요.</li>
+        <li><b>엄격한 판정</b>: 오차 없이 표시 단위까지 정확히 맞아야 성공이에요. 상품이 걸린 결승전에 어울려요.</li>
+      </ul>
+      <p class="tip">
+        처음 해 보는 사람이 많다면 3~5% 정도로 넉넉하게 시작해 성공의 재미를 느끼게 하고, 라운드가 진행될수록 줄여 가면 분위기가 살아나요.
+      </p>
+
+      <h2 id="event">3. 행사·수업에서 쓰는 법</h2>
+      <h3>추천 진행 순서</h3>
+      <ol>
+        <li>설정 › 텍스트 탭에서 제목을 행사 이름으로 바꿔요. (예: "2026 신입생 OT 타임 챌린지")</li>
+        <li>설정 › 게임 탭에서 목표 시간과 허용 오차를 정해요.</li>
+        <li>긴장감을 높이고 싶다면 연출 탭에서 <b>블라인드 모드</b>(몇 초 뒤 시간이 가려짐)와 <b>극적인 결과 공개</b>를 켜요.</li>
+        <li>설정 › 운영 탭에서 <b>PIN 잠금</b>을 걸면 참가자가 실수로 설정을 열지 못해요. 게임 조작은 그대로 돼요.</li>
+        <li>전체화면으로 띄우고 시작! 참가자 이름을 기록하면 마지막에 랭킹 화면으로 시상할 수 있어요.</li>
+      </ol>
+      <h3>이런 곳에서 써 보세요</h3>
+      <ul>
+        <li><b>회사·학교 행사</b>: 레크리에이션, 송년회, 체육대회 쉬는 시간 이벤트</li>
+        <li><b>수업</b>: 시간 감각 실험, 집중력 활동, 모둠 대항전</li>
+        <li><b>매장·부스 이벤트</b>: "10초 맞추면 사은품" 같은 참여형 이벤트</li>
+        <li><b>방송</b>: 시청자 참여 미션, 벌칙 게임</li>
+      </ul>
+
+      <h2 id="stream">4. 프로젝터·OBS 송출</h2>
+      <p>진행자 화면과 관객 화면을 나누면 진행이 훨씬 편해요.</p>
+      <ol>
+        <li>설정 › 운영 탭에서 <b>송출 창 열기</b>를 눌러요.</li>
+        <li>새로 열린 송출 창을 프로젝터나 두 번째 모니터로 옮기고 <kbd>F11</kbd>로 전체화면을 만들어요.</li>
+        <li>진행자는 원래 창에서 설정을 바꾸고 조작해요. 송출 창에서 누른 키도 진행자 창으로 전달돼요.</li>
+      </ol>
+      <p>
+        OBS로 방송한다면 설정 › 디자인 탭의 배경을 <b>크로마키</b>로 바꾼 뒤 창 캡처에 크로마 키 필터를 걸거나, <b>투명 (송출용)</b> 배경을 써서 방송 화면 위에
+        타이머만 얹을 수 있어요.
+      </p>
+
+      <h2 id="design">5. 화면 꾸미기</h2>
+      <ul>
+        <li><b>테마와 디자인</b>: 네온, 글래스 등 테마를 고르고 글꼴·색·그라데이션·글자 효과를 바꿔요.</li>
+        <li><b>화면 편집</b>: 아래 메뉴의 편집 버튼을 누르면 PPT처럼 제목·타이머·안내 문구를 끌어서 옮기고 크기를 바꿀 수 있어요.</li>
+        <li><b>요소 삽입</b>: 로고 이미지, 글상자, 도형을 넣어 행사 화면을 완성해요.</li>
+        <li><b>효과음</b>: 시작·정지·성공·실패 소리를 켜거나 원하는 소리 파일(mp3·wav·ogg)로 바꿀 수 있어요.</li>
+        <li><b>저장과 공유</b>: 꾸민 화면을 <code>.stopia</code> 파일로 저장해 두면 다른 컴퓨터에서도 그대로 열 수 있어요.</li>
+      </ul>
+
+      <h2 id="records">6. 참가자 기록과 랭킹</h2>
+      <ul>
+        <li>설정 › 기록 탭에서 참가자 이름을 넣고 플레이하면 이름과 기록이 함께 남아요.</li>
+        <li><kbd>L</kbd> 키나 아래 메뉴의 트로피 버튼으로 랭킹 화면을 띄워 순위를 발표하세요.</li>
+        <li>기록은 CSV로 내보내 엑셀에서 정리할 수 있어요.</li>
+      </ul>
+
+      <h2 id="tips">7. 10초 맞추기를 잘하는 요령</h2>
+      <ol>
+        <li><b>일정한 박자로 세기</b>: "하나-둘-셋"보다 "천일-천이-천삼"처럼 길게 세면 1초 간격이 고르게 유지돼요.</li>
+        <li><b>반응 시간 계산하기</b>: 사람은 결심하고 버튼을 누르기까지 0.1~0.2초가 걸려요. "10"을 다 세고 누르면 늦기 쉬우니, 마지막 숫자를 세기 시작할 때 누르는 연습을 해 보세요.</li>
+        <li><b>몸으로 박자 타기</b>: 발끝이나 손가락으로 박자를 타면 머릿속으로만 셀 때보다 흔들림이 적어요.</li>
+        <li><b>블라인드 모드에선 처음 3초가 중요</b>: 시간이 보일 때 박자를 맞춰 두고, 가려진 뒤에는 그 박자를 그대로 이어 가세요.</li>
+        <li><b>긴장 풀기</b>: 긴장하면 박자가 빨라지는 경향이 있어요. 시작 전에 숨을 한 번 길게 내쉬세요.</li>
+      </ol>
+
+      <h2 id="faq">8. 자주 묻는 질문</h2>
+      <dl>
+        <dt>무료인가요? 설치해야 하나요?</dt>
+        <dd>완전히 무료이고 설치도 필요 없어요. 크롬, 엣지, 사파리 같은 브라우저에서 주소만 열면 바로 쓸 수 있어요.</dd>
+        <dt>꾸민 설정과 기록은 어디에 저장되나요?</dt>
+        <dd>회원가입 없이 지금 쓰는 브라우저 안에만 저장돼요. 다른 컴퓨터에서 쓰려면 <code>.stopia</code> 파일로 저장해 옮기세요.</dd>
+        <dt>휴대폰이나 태블릿에서도 되나요?</dt>
+        <dd>네. "화면을 탭(클릭)해서 시작·정지"를 켜면 화면을 눌러 플레이할 수 있어요. 큰 행사에서는 노트북과 프로젝터 조합을 추천해요.</dd>
+        <dt>시간은 정확한가요?</dt>
+        <dd>브라우저의 고정밀 시계를 써서 1/100초 단위로 판정해요. 시간 표시 형식을 1/1000초로 바꾸면 판정도 1/1000초 단위로 해요.</dd>
+        <dt>영어 화면도 있나요?</dt>
+        <dd>네. 아래 메뉴의 EN 버튼이나 <a href="en/">stopia.site/en/</a> 에서 영어로 쓸 수 있어요.</dd>
+      </dl>
+
+      <a class="cta" href="./">스토피아 시작하기</a>
+
+      <footer>
+        <a href="./">스토피아</a> · <a href="privacy.html">개인정보처리방침</a> · <a href="terms.html">이용약관</a> · 문의
+        <a href="mailto:sub9707@naver.com">sub9707@naver.com</a>
+      </footer>
+    </main>
+  </body>
+</html>
