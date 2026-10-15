@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useSyncExternalStore } from 'react';
-import { rootHref, tr } from '../../i18n';
+import { tr } from '../../i18n';
 
 /* 구글 애드센스 설정 — .env 에 넣으면 적용 (.env.example 참고)
    비어 있으면 광고 영역을 만들지 않음 (개발 서버에서만 자리 표시) */
@@ -9,9 +9,10 @@ const SLOTS = {
   right: import.meta.env.VITE_ADSENSE_SLOT_RIGHT ?? '',
 };
 
-/** 세로 배너 (와이드 스카이스크래퍼) */
-export const AD_W = 160;
-export const AD_H = 600;
+/** 세로 배너 — 보통은 와이드 스카이스크래퍼(160), 아주 넓은 화면에선 하프 페이지(300) · 같은 광고 단위를 크기만 바꿔 씀 */
+const AD_W = 160;
+const AD_W_WIDE = 300;
+const AD_H = 600;
 
 /** 광고를 띄울 만큼 화면이 넓고 높을 때만 — 콘텐츠를 좁히지 않도록.
  *  브라우저 전체화면(F11)일 때도 숨김 */
@@ -23,48 +24,26 @@ const subscribe = (cb: () => void) => {
   return () => mq.removeEventListener('change', cb);
 };
 
+/** 하프 페이지를 넣어도 무대가 충분히 넓은 화면 (stage.css 의 .has-ads 여백과 같은 기준) */
+const HALF_PAGE_QUERY = '(min-width: 1800px)';
+const subscribeHalf = (cb: () => void) => {
+  const mq = window.matchMedia(HALF_PAGE_QUERY);
+  mq.addEventListener('change', cb);
+  return () => mq.removeEventListener('change', cb);
+};
+const useAdWidth = () => (useSyncExternalStore(subscribeHalf, () => window.matchMedia(HALF_PAGE_QUERY).matches) ? AD_W_WIDE : AD_W);
+
 export function useAdsVisible() {
   const wide = useSyncExternalStore(subscribe, () => window.matchMedia(WIDE_QUERY).matches);
-  return wide && (!!CLIENT || import.meta.env.DEV);
+  // 광고 단위(슬롯)까지 넣어야 배포 화면에 자리가 생김 — 게시자 ID만 있을 땐(심사 중) 빈 칸을 보이지 않음
+  return wide && ((!!CLIENT && !!(SLOTS.left || SLOTS.right)) || import.meta.env.DEV);
 }
 
-/* ───── 광고 쿠키 동의 — 고르기 전엔 광고를 부르지 않음, 거부하면 맞춤이 아닌 광고 ───── */
-const CONSENT_KEY = 'timer-game:ad-consent';
-export type Consent = 'granted' | 'denied' | null;
-let consent: Consent = (() => {
-  try {
-    const v = localStorage.getItem(CONSENT_KEY);
-    return v === 'granted' || v === 'denied' ? v : null;
-  } catch {
-    return null;
-  }
-})();
-const consentListeners = new Set<() => void>();
-export function setConsent(v: 'granted' | 'denied') {
-  consent = v;
-  try {
-    localStorage.setItem(CONSENT_KEY, v);
-  } catch {
-    /* storage unavailable */
-  }
-  consentListeners.forEach((l) => l());
-}
-const subscribeConsent = (l: () => void) => {
-  consentListeners.add(l);
-  return () => {
-    consentListeners.delete(l);
-  };
-};
-export const useConsent = () => useSyncExternalStore(subscribeConsent, () => consent);
-/** 광고를 쓰는 배포인지 (동의 안내를 띄울지) */
-export const adsConfigured = !!CLIENT;
-
+/* 동의는 애드센스의 개인 정보 보호 메시지(구글 인증 CMP)가 맡음 — 유럽·영국 방문자에게만 자동으로 물어봄 */
 let scriptLoaded = false;
 function loadAdsense() {
-  if (scriptLoaded || !CLIENT || !consent) return;
+  if (scriptLoaded || !CLIENT) return;
   scriptLoaded = true;
-  // 거부했으면 맞춤이 아닌 광고 요청
-  if (consent === 'denied') (window as unknown as { adsbygoogle?: { requestNonPersonalizedAds?: number } }).adsbygoogle = Object.assign([], { requestNonPersonalizedAds: 1 });
   const s = document.createElement('script');
   s.async = true;
   s.crossOrigin = 'anonymous';
@@ -74,7 +53,7 @@ function loadAdsense() {
 
 type AdsQueue = { push: (v: object) => void };
 
-function AdSlot({ slot }: { slot: string }) {
+function AdSlot({ slot, width }: { slot: string; width: number }) {
   const ref = useRef<HTMLModElement>(null);
 
   useEffect(() => {
@@ -95,45 +74,21 @@ function AdSlot({ slot }: { slot: string }) {
     <ins
       ref={ref}
       className="adsbygoogle"
-      style={{ display: 'inline-block', width: AD_W, height: AD_H }}
+      style={{ display: 'inline-block', width, height: AD_H }}
       data-ad-client={CLIENT}
       data-ad-slot={slot}
     />
   );
 }
 
-/** 화면 양옆 광고 영역 — 앱 배경 위에 은은한 유리판으로 얹음 (동의 안내에 답한 뒤에만 광고 요청) */
+/** 화면 양옆 광고 영역 — 앱 배경 위에 은은한 유리판으로 얹음 */
 export const AdRail = memo(function AdRail({ side }: { side: 'left' | 'right' }) {
   const slot = SLOTS[side];
-  const c = useConsent();
+  const width = useAdWidth();
   return (
     <aside className={`ad-rail is-${side}`} aria-label={tr('광고')}>
       <span className="ad-label">AD</span>
-      <div className="ad-box">{CLIENT && slot && c ? <AdSlot slot={slot} /> : <span className="ad-placeholder">{`${AD_W} × ${AD_H}`}</span>}</div>
+      <div className="ad-box">{CLIENT && slot ? <AdSlot key={width} slot={slot} width={width} /> : <span className="ad-placeholder">{`${width} × ${AD_H}`}</span>}</div>
     </aside>
   );
 });
-
-/** 광고 쿠키 동의 안내 (광고를 쓰는 배포에서 아직 고르지 않았을 때만) */
-export function ConsentBanner() {
-  const c = useConsent();
-  if (!adsConfigured || c) return null;
-  return (
-    <div className="consent" role="dialog" aria-label={tr('쿠키 동의')}>
-      <p>
-        {tr('이 사이트는 운영비를 위해 Google 광고를 보여주며, 광고에 쿠키를 쓸 수 있어요.')}{' '}
-        <a href={rootHref('privacy.html', true)} target="_blank" rel="noreferrer">
-          {tr('개인정보처리방침')}
-        </a>
-      </p>
-      <div className="consent-actions">
-        <button className="ghost-btn" onClick={() => setConsent('denied')}>
-          {tr('맞춤 광고 거부')}
-        </button>
-        <button className="primary-btn" onClick={() => setConsent('granted')}>
-          {tr('동의')}
-        </button>
-      </div>
-    </div>
-  );
-}

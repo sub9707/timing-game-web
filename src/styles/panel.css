@@ -3197,10 +3197,9 @@
 
 /* 편집 중 숨긴 요소는 반투명 (showHidden) — boxStyle 이 opacity 를 주지만 클릭 표시용 */
 
-/* ───── 패널 밖 대화상자 (PIN · 오류 · 쿠키 동의) ───── */
+/* ───── 패널 밖 대화상자 (PIN · 오류) ───── */
 .pin-dialog,
-.crash,
-.consent {
+.crash {
   --ui-line: rgba(255, 255, 255, 0.1);
   --ui-field: rgba(255, 255, 255, 0.06);
   --ui-fg: #f4f4f5;
@@ -3334,47 +3333,6 @@
   gap: 8px;
 }
 
-.consent {
-  position: fixed;
-  z-index: 40;
-  left: 50%;
-  bottom: 80px; /* 가운데 아래 메뉴 위 */
-  translate: -50% 0;
-  width: min(560px, calc(100vw - 32px));
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 16px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(22, 22, 28, 0.96);
-  border: 1px solid var(--ui-line);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.consent p {
-  flex: 1 1 260px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.consent a {
-  color: #8fb5ff;
-}
-
-.consent-actions {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.consent .ghost-btn,
-.consent .primary-btn {
-  height: 36px;
-  padding: 0 14px;
-}
-
 .drop-hint {
   position: fixed;
   z-index: 50;
@@ -3457,9 +3415,6 @@
     display: none;
   }
 
-  .consent {
-    bottom: 68px;
-  }
 }
 
 /* 터치 기기: 누르기 쉬운 크기 */

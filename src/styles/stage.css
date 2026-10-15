@@ -95,8 +95,19 @@
 }
 
 /* ───────── 양옆 광고 ───────── */
+.app.has-ads {
+  --ad-w: 160px;
+}
+
+/* 아주 넓은 화면은 하프 페이지(300×600) — AdRail.tsx 의 HALF_PAGE_QUERY 와 같은 기준 */
+@media (min-width: 1800px) {
+  .app.has-ads {
+    --ad-w: 300px;
+  }
+}
+
 .app.has-ads .canvas-area {
-  inset-inline: calc(160px + 16px + 24px);
+  inset-inline: calc(var(--ad-w) + 16px + 24px);
 }
 
 .ad-rail {
@@ -142,7 +153,7 @@
 }
 
 .ad-box {
-  width: 160px;
+  width: var(--ad-w, 160px);
   height: 600px;
   display: grid;
   place-items: center;

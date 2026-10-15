@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent, type Pointer
 import type { InsertKind } from './components/editor/EditorMenu';
 import { StageEditor, type EditView, type Zoom } from './components/editor/StageEditor';
 import { SettingsPanel } from './components/panel/SettingsPanel';
-import { adsConfigured, AdRail, ConsentBanner, useAdsVisible, useConsent } from './components/stage/AdRail';
+import { AdRail, useAdsVisible } from './components/stage/AdRail';
 import type { TextEditProps } from './components/stage/EditableText';
 import { Stage, type StageView } from './components/stage/Stage';
 import { ChevronDownIcon, ExpandIcon, GearIcon, InfoIcon, LayoutIcon, LockIcon, ShrinkIcon, TrophyIcon } from './components/ui/Icons';
@@ -78,7 +78,6 @@ export default function App() {
   const [boardOpen, setBoardOpen] = useState(false);
   /** 처음 온 사람에게 설정 버튼 안내 (한 번 열거나 닫으면 다시 안 띄움) */
   const [guideSeen, setGuideSeen] = useLocalState('timer-game:guide-settings', false);
-  const consent = useConsent();
   /** 화면 직접 편집 (설정 패널이 서식 창 역할) */
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<EditId[]>([]);
@@ -200,8 +199,7 @@ export default function App() {
   useEffect(() => {
     if (settingsOpen) setGuideSeen(true);
   }, [settingsOpen, setGuideSeen]);
-  // 쿠키 동의 안내와 겹치지 않게 그 뒤에
-  const showGuide = !guideSeen && !lock.locked && !dockHidden && (!adsConfigured || !!consent);
+  const showGuide = !guideSeen && !lock.locked && !dockHidden;
 
   /* ───── 화면 편집 ───── */
 
@@ -545,8 +543,6 @@ export default function App() {
       )}
 
       <SavedBadge at={badgeAt} message={badgeMsg} tone={toast && toast.at === badgeAt ? toast.tone : 'ok'} />
-
-      <ConsentBanner />
 
       {dragOver && <div className="drop-hint">{tr('놓으면 열기 · 그림은 화면에 삽입')}</div>}
 
