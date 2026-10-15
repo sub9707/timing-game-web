@@ -22,6 +22,8 @@ interface SeoEnv {
   google?: string;
   naver?: string;
   bing?: string;
+  /** 애드센스 게시자 ID — 사이트 심사용 소유 확인 메타 태그 */
+  adsense?: string;
 }
 
 /** 언어별 머리말 (prefix = 사이트 맨 위까지의 상대 경로) */
@@ -58,6 +60,7 @@ function head(t: SeoText, env: SeoEnv, prefix: string) {
     env.google && `<meta name="google-site-verification" content="${esc(env.google)}" />`,
     env.naver && `<meta name="naver-site-verification" content="${esc(env.naver)}" />`,
     env.bing && `<meta name="msvalidate.01" content="${esc(env.bing)}" />`,
+    env.adsense && `<meta name="google-adsense-account" content="${esc(env.adsense)}" />`,
   ];
   // 구조화 데이터 — 검색 결과에 무료 웹 게임으로 보이도록
   const ld = {
@@ -160,6 +163,7 @@ export default defineConfig(({ mode }) => {
         google: env.VITE_GOOGLE_SITE_VERIFICATION,
         naver: env.VITE_NAVER_SITE_VERIFICATION,
         bing: env.VITE_BING_SITE_VERIFICATION,
+        adsense: env.VITE_ADSENSE_CLIENT?.trim(),
       }),
     ],
   };
