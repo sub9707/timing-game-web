@@ -44,19 +44,6 @@ npm run dev
 | `npm run preview` | 빌드 결과 미리보기 |
 | `npm run test:e2e` | e2e 테스트 (설치된 Chrome 사용) |
 
-## 환경변수
-
-`.env.example` 을 `.env` 로 복사해 값을 넣습니다. 모두 선택 사항이며, 비워 두면 해당 기능이 꺼집니다.
-
-| 이름 | 용도 |
-| --- | --- |
-| `VITE_SITE_URL` | 배포 주소. canonical, hreflang, OG 이미지, `sitemap.xml` 에 씁니다. |
-| `VITE_GOOGLE_SITE_VERIFICATION` | Google Search Console 소유 확인 |
-| `VITE_NAVER_SITE_VERIFICATION` | 네이버 서치어드바이저 소유 확인 |
-| `VITE_BING_SITE_VERIFICATION` | Bing 웹마스터 도구 소유 확인 |
-| `VITE_ADSENSE_CLIENT` | 애드센스 게시자 ID. 빌드 때 `ads.txt` 와 소유 확인 메타 태그를 만듭니다. |
-| `VITE_ADSENSE_SLOT_LEFT`, `VITE_ADSENSE_SLOT_RIGHT` | 양옆 세로 배너 광고 단위 ID. 둘 다 비어 있으면 광고 영역이 생기지 않습니다. |
-| `VITE_GA_ID` | Google Analytics 4 측정 ID. 개발 서버와 송출 창은 집계하지 않습니다. |
 
 ## 폴더 구조
 
